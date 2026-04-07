@@ -2,7 +2,7 @@
 
 > 靜心凝神，以易經六十四卦指引方向
 
-**線上體驗：** https://biology-c.github.io/I-Ching-reading/
+**線上體驗：** [biology-c.github.io/I-Ching-reading](https://biology-c.github.io/I-Ching-reading/)
 
 ---
 
@@ -39,3 +39,30 @@
 ## 本地執行
 
 直接用瀏覽器開啟 `index.html` 即可。
+
+---
+
+## 授權條款
+
+Copyright © 2026 Biology-C (Issue). All rights reserved.
+
+本專案採用 **CC BY-NC 4.0（創用 CC 姓名標示—非商業性）** 授權。
+
+### 你可以
+
+- 自由瀏覽、下載、分享本專案
+- 基於本專案進行修改與二次創作
+- 將本專案用於個人學習、研究或教育用途
+
+### 條件
+
+- **姓名標示**：須明確標示原作者（Biology-C）及原始連結
+- **非商業性**：不得將本專案或其衍生作品用於任何商業目的，包括但不限於：販售、廣告獲利、付費服務等
+
+### 你不可以
+
+- 直接或間接以本專案牟利
+- 移除或竄改版權聲明
+- 在未取得書面授權的情況下用於商業產品
+
+如需商業授權，請聯絡：[h000312@gmail.com](mailto:h000312@gmail.com)
