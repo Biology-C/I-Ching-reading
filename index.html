@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="線上易經問卦解卦工具 — 64卦386爻辭，三段式動態解讀，4096種占卜結果">
+  <title>易 — 線上問卦</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/style2.css">
+  <link rel="stylesheet" href="css/style3.css">
+</head>
+<body>
+  <div class="app-background"></div>
+  <canvas id="particle-canvas"></canvas>
+  <div id="reveal-flash" class="reveal-flash"></div>
+
+  <!-- ═══ 場景 1：首頁 ═══ -->
+  <div id="scene-home" class="scene active">
+    <div id="home-enter" style="cursor:pointer;text-align:center">
+      <div class="home-title">易</div>
+      <div class="home-subtitle">問 卦 · 解 卦</div>
+    </div>
+    <div class="home-hint">靜心凝神，點擊開始</div>
+  </div>
+
+  <!-- ═══ 場景 2：選擇方向 ═══ -->
+  <div id="scene-direction" class="scene">
+    <button class="back-btn" data-back="home">← </button>
+    <div class="direction-title">你想問什麼方向？</div>
+    <div class="direction-grid">
+      <div class="direction-card" data-direction="love" id="dir-love">
+        <span class="direction-icon">❤️</span>
+        <div class="direction-label">感情</div>
+        <div class="direction-desc">愛情、關係、人際</div>
+      </div>
+      <div class="direction-card" data-direction="study" id="dir-study">
+        <span class="direction-icon">📚</span>
+        <div class="direction-label">學業</div>
+        <div class="direction-desc">考試、學習、進修</div>
+      </div>
+      <div class="direction-card" data-direction="career" id="dir-career">
+        <span class="direction-icon">💼</span>
+        <div class="direction-label">工作</div>
+        <div class="direction-desc">事業、職涯、決策</div>
+      </div>
+      <div class="direction-card" data-direction="wealth" id="dir-wealth">
+        <span class="direction-icon">💰</span>
+        <div class="direction-label">財運</div>
+        <div class="direction-desc">投資、理財、收入</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ 場景 3：起卦方式 ═══ -->
+  <div id="scene-method" class="scene">
+    <button class="back-btn" data-back="direction">← </button>
+    <div class="method-title">選擇起卦方式</div>
+    <div class="method-subtitle">心中默念你的問題，然後選擇一種方式</div>
+
+    <div class="method-tabs">
+      <button class="method-tab active" data-method="instant">⚡ 一念成卦</button>
+      <button class="method-tab" data-method="number">🔢 數字起卦</button>
+      <button class="method-tab" data-method="coin">🪙 擲幣問天</button>
+    </div>
+
+    <!-- 一念成卦 -->
+    <div id="panel-instant" class="method-panel active" style="text-align:center">
+      <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:2rem">閉上眼睛，在心中專注想著你的問題，然後點擊</p>
+      <button class="instant-btn" id="btn-instant">問 卦</button>
+    </div>
+
+    <!-- 數字起卦 -->
+    <div id="panel-number" class="method-panel" style="max-width:420px;width:100%">
+      <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:1.5rem;text-align:center">輸入 6 組三位數（100-999），或點擊隨機填入</p>
+      <div class="number-grid">
+        <div class="number-input-group">
+          <label>初爻</label><input type="number" class="number-input" min="100" max="999" placeholder="---">
+        </div>
+        <div class="number-input-group">
+          <label>二爻</label><input type="number" class="number-input" min="100" max="999" placeholder="---">
+        </div>
+        <div class="number-input-group">
+          <label>三爻</label><input type="number" class="number-input" min="100" max="999" placeholder="---">
+        </div>
+        <div class="number-input-group">
+          <label>四爻</label><input type="number" class="number-input" min="100" max="999" placeholder="---">
+        </div>
+        <div class="number-input-group">
+          <label>五爻</label><input type="number" class="number-input" min="100" max="999" placeholder="---">
+        </div>
+        <div class="number-input-group">
+          <label>上爻</label><input type="number" class="number-input" min="100" max="999" placeholder="---">
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn" id="btn-random-fill">🎲 隨機填入</button>
+        <button class="btn btn--primary" id="btn-number-go">起 卦</button>
+      </div>
+    </div>
+
+    <!-- 擲幣問天 -->
+    <div id="panel-coin" class="method-panel" style="text-align:center">
+      <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:1.5rem">點擊「擲幣」投擲三枚銅錢，共投六次</p>
+      <div class="coin-area">
+        <div class="coin">？</div>
+        <div class="coin">？</div>
+        <div class="coin">？</div>
+      </div>
+      <div id="coin-progress" class="coin-progress">第 0 / 6 爻</div>
+      <button class="btn btn--primary" id="btn-toss" style="margin-top:1rem">擲 幣</button>
+      <div id="coin-yao-display" class="yao-display"></div>
+    </div>
+  </div>
+
+  <!-- ═══ 場景 4：演算動畫 ═══ -->
+  <div id="scene-animation" class="scene">
+    <div style="text-align:center">
+      <div class="divination-text">天地造化中⋯⋯</div>
+      <div id="hex-build" class="hexagram-build"></div>
+    </div>
+  </div>
+
+  <!-- ═══ 場景 5：解卦結果 ═══ -->
+  <div id="scene-result" class="scene scene--result">
+    <div class="result-container" id="result-content">
+      <!-- 動態渲染 -->
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/hexagram-data.js"></script>
+  <script src="js/hexagram-data-2.js"></script>
+  <script src="js/hexagram-data-3.js"></script>
+  <script src="js/hexagram-data-4.js"></script>
+  <script src="js/divination.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

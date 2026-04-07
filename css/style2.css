@@ -1,0 +1,45 @@
+/* 場景3：起卦方式 */
+.method-title{font-family:var(--font-serif);font-size:clamp(1.3rem,3.5vw,1.8rem);color:var(--gold-primary);margin-bottom:1rem;letter-spacing:.1em}
+.method-subtitle{color:var(--text-secondary);font-size:.9rem;margin-bottom:2.5rem}
+.method-tabs{display:flex;gap:.5rem;margin-bottom:2.5rem;background:rgba(255,255,255,0.05);border-radius:var(--radius-sm);padding:4px}
+.method-tab{background:none;border:none;color:var(--text-secondary);font-family:var(--font-sans);font-size:.85rem;padding:.6rem 1.2rem;border-radius:6px;cursor:pointer;transition:all .2s var(--ease-smooth);white-space:nowrap}
+.method-tab:hover{color:var(--text-primary)}
+.method-tab.active{background:var(--gold-primary);color:var(--bg-primary);font-weight:700}
+.method-panel{display:none}.method-panel.active{display:block}
+
+/* 數字起卦 */
+.number-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1.5rem}
+.number-input-group{text-align:center}
+.number-input-group label{display:block;font-size:.75rem;color:var(--text-dim);margin-bottom:4px;font-family:var(--font-serif)}
+.number-input{width:100%;max-width:100px;padding:.8rem;text-align:center;font-size:1.4rem;font-family:var(--font-serif);font-weight:700;color:var(--gold-primary);background:rgba(212,175,55,0.08);border:1px solid var(--card-border);border-radius:var(--radius-sm);outline:none;transition:all .2s}
+.number-input:focus{border-color:var(--gold-primary);box-shadow:0 0 20px var(--gold-glow);background:rgba(212,175,55,0.12)}
+.number-input::-webkit-outer-spin-button,.number-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.number-input{-moz-appearance:textfield}
+
+/* 一念成卦 */
+.instant-btn{width:160px;height:160px;border-radius:50%;border:2px solid var(--gold-primary);background:radial-gradient(circle,rgba(212,175,55,0.15) 0%,transparent 70%);color:var(--gold-primary);font-family:var(--font-serif);font-size:1.4rem;font-weight:700;cursor:pointer;transition:all .4s;position:relative;letter-spacing:.1em}
+.instant-btn::before{content:'';position:absolute;top:-4px;left:-4px;right:-4px;bottom:-4px;border-radius:50%;border:1px solid var(--gold-glow);animation:spin-slow 12s linear infinite}
+.instant-btn::after{content:'';position:absolute;top:-8px;left:-8px;right:-8px;bottom:-8px;border-radius:50%;border:1px dashed rgba(212,175,55,0.15);animation:spin-slow 20s linear infinite reverse}
+@keyframes spin-slow{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.instant-btn:hover{transform:scale(1.08);box-shadow:0 0 50px var(--gold-glow),0 0 100px rgba(212,175,55,0.1)}
+.instant-btn:active{transform:scale(.95)}
+
+/* 擲幣 */
+.coin-area{display:flex;gap:1.5rem;justify-content:center;margin-bottom:1.5rem}
+.coin{width:70px;height:70px;border-radius:50%;background:linear-gradient(145deg,#d4af37,#b8960c);border:3px solid #f0d060;display:flex;align-items:center;justify-content:center;font-family:var(--font-serif);font-size:1.6rem;font-weight:900;color:var(--bg-primary);box-shadow:0 4px 15px rgba(0,0,0,0.4),inset 0 2px 4px rgba(240,208,96,0.3);transition:all .3s}
+.coin.flipping{animation:coinFlip .6s ease-in-out}
+@keyframes coinFlip{0%{transform:rotateY(0) scale(1)}50%{transform:rotateY(180deg) scale(1.2)}100%{transform:rotateY(360deg) scale(1)}}
+.coin-progress{font-size:.85rem;color:var(--text-secondary);margin-bottom:1rem}
+.yao-display{display:flex;flex-direction:column-reverse;gap:8px;align-items:center;margin-top:1.5rem;min-height:120px}
+.yao-line{display:flex;align-items:center;gap:4px;animation:fadeInUp .4s var(--ease-bounce) both}
+.yao-line .yang{width:60px;height:8px;background:var(--gold-primary);border-radius:2px;box-shadow:0 0 10px var(--gold-glow)}
+.yao-line .yin{display:flex;gap:8px}
+.yao-line .yin span{width:24px;height:8px;background:var(--gold-primary);border-radius:2px;box-shadow:0 0 10px var(--gold-glow)}
+
+/* 按鈕 */
+.btn{font-family:var(--font-sans);font-size:.95rem;font-weight:500;padding:.8rem 2rem;border-radius:var(--radius-sm);border:1px solid var(--card-border);background:var(--card-bg);color:var(--text-primary);cursor:pointer;transition:all .2s var(--ease-smooth);backdrop-filter:blur(10px);letter-spacing:.05em}
+.btn:hover{border-color:var(--gold-primary);box-shadow:0 0 20px var(--gold-glow);transform:translateY(-2px)}
+.btn--primary{background:linear-gradient(135deg,var(--gold-primary),var(--gold-dark));color:var(--bg-primary);border:none;font-weight:700}
+.btn--primary:hover{box-shadow:0 4px 30px var(--gold-glow)}
+.btn--ghost{background:transparent;border:1px solid var(--text-dim);color:var(--text-secondary)}
+.btn-row{display:flex;gap:1rem;margin-top:1.5rem;flex-wrap:wrap;justify-content:center}

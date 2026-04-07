@@ -1,0 +1,63 @@
+/* ============================================
+   易經問卦工具 — 設計系統
+   ============================================ */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700;900&family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
+
+:root {
+  --bg-primary: #0a0015;
+  --bg-secondary: #1a0a2e;
+  --gold-primary: #d4af37;
+  --gold-light: #f0d060;
+  --gold-dark: #b8960c;
+  --gold-glow: rgba(212,175,55,0.3);
+  --moon-white: #e8e0d4;
+  --text-primary: #e8e0d4;
+  --text-secondary: rgba(232,224,212,0.65);
+  --text-dim: rgba(232,224,212,0.35);
+  --card-bg: rgba(26,10,46,0.7);
+  --card-border: rgba(212,175,55,0.2);
+  --love-color: #e85d75; --love-glow: rgba(232,93,117,0.3);
+  --study-color: #5da4e8; --study-glow: rgba(93,164,232,0.3);
+  --career-color: #5de8a0; --career-glow: rgba(93,232,160,0.3);
+  --wealth-color: #e8c85d; --wealth-glow: rgba(232,200,93,0.3);
+  --font-serif: 'Noto Serif TC','Times New Roman',serif;
+  --font-sans: 'Noto Sans TC','Helvetica Neue',sans-serif;
+  --ease-smooth: cubic-bezier(0.4,0,0.2,1);
+  --ease-bounce: cubic-bezier(0.34,1.56,0.64,1);
+  --ease-dramatic: cubic-bezier(0.77,0,0.175,1);
+  --radius-sm: 8px; --radius-md: 16px; --radius-lg: 24px;
+}
+
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{font-size:16px;scroll-behavior:smooth}
+body{font-family:var(--font-sans);color:var(--text-primary);background:var(--bg-primary);min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+
+#particle-canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none}
+.app-background{position:fixed;top:0;left:0;width:100%;height:100%;background:radial-gradient(ellipse at 50% 0%,var(--bg-secondary) 0%,var(--bg-primary) 70%);z-index:-1}
+
+/* 場景系統 */
+.scene{position:fixed;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:1;opacity:0;visibility:hidden;transition:opacity .8s var(--ease-dramatic),visibility .8s;padding:1.5rem;overflow-y:auto}
+.scene.active{opacity:1;visibility:visible}
+.scene--result{position:relative;height:auto;min-height:100vh;justify-content:flex-start;padding-top:4rem;padding-bottom:4rem}
+.scene--result.active{position:relative}
+
+/* 場景1：首頁 */
+.home-title{font-family:var(--font-serif);font-size:clamp(5rem,15vw,12rem);font-weight:900;color:var(--gold-primary);text-shadow:0 0 40px var(--gold-glow),0 0 80px rgba(212,175,55,0.15);animation:breathe 4s ease-in-out infinite;cursor:pointer;user-select:none}
+@keyframes breathe{0%,100%{transform:scale(1);text-shadow:0 0 40px var(--gold-glow)}50%{transform:scale(1.03);text-shadow:0 0 60px var(--gold-glow),0 0 120px rgba(212,175,55,0.25)}}
+.home-subtitle{font-family:var(--font-serif);font-size:clamp(1rem,2.5vw,1.4rem);color:var(--text-secondary);margin-top:2.5rem;letter-spacing:.3em;animation:fadeInUp 1.5s var(--ease-smooth) .5s both}
+.home-hint{font-size:.85rem;color:var(--text-dim);margin-top:4rem;animation:pulse 2.5s ease-in-out infinite,fadeInUp 1.5s var(--ease-smooth) 1s both}
+@keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{opacity:.35}50%{opacity:.7}}
+
+/* 場景2：選擇方向 */
+.direction-title{font-family:var(--font-serif);font-size:clamp(1.5rem,4vw,2.2rem);color:var(--gold-primary);margin-bottom:2.5rem;letter-spacing:.15em}
+.direction-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1.5rem;max-width:500px;width:100%}
+.direction-card{background:var(--card-bg);border:1px solid var(--card-border);border-radius:var(--radius-md);padding:2.5rem 1.5rem;text-align:center;cursor:pointer;transition:all .4s var(--ease-smooth);backdrop-filter:blur(10px);position:relative;overflow:hidden}
+.direction-card:hover{border-color:rgba(212,175,55,0.6);transform:translateY(-6px);box-shadow:0 12px 40px rgba(0,0,0,0.4),0 0 30px var(--glow-color,var(--gold-glow))}
+.direction-card[data-direction="love"]{--glow-color:var(--love-glow)}
+.direction-card[data-direction="study"]{--glow-color:var(--study-glow)}
+.direction-card[data-direction="career"]{--glow-color:var(--career-glow)}
+.direction-card[data-direction="wealth"]{--glow-color:var(--wealth-glow)}
+.direction-icon{font-size:2.8rem;margin-bottom:1rem;display:block}
+.direction-label{font-family:var(--font-serif);font-size:1.3rem;color:var(--text-primary);letter-spacing:.1em}
+.direction-desc{font-size:.8rem;color:var(--text-secondary);margin-top:.5rem}
