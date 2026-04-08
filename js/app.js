@@ -8,6 +8,7 @@ const App = (() => {
   let currentMethod = 'instant';
   let coinTosses = [];
   let reading = null;
+  let feedbackRating = 0;
 
   const dirLabels = {love:'感情',study:'學業',career:'工作',wealth:'財運'};
   const dirIcons = {love:'❤️',study:'📚',career:'💼',wealth:'💰'};
@@ -137,6 +138,7 @@ const App = (() => {
       goTo('home');
     });
 
+    initFeedbackModal();
     if (!restoreFromHash()) goTo('home');
   }
 
@@ -193,6 +195,7 @@ const App = (() => {
 
   // === 演算動畫 ===
   function showAnimation() {
+    Analytics.trackQuestion(selectedDirection, currentMethod);
     goTo('animation');
     const build = document.getElementById('hex-build');
     if (build) build.innerHTML = '';
@@ -225,8 +228,8 @@ const App = (() => {
     }, 350);
   }
 
-  // === 分享功能 ===
-  function shareResult() {
+  // === 分享連結 ===
+  function shareLink() {
     if (!reading) return;
     const hash = '#r=' + reading.lines.join(',') + '&d=' + (selectedDirection || 'love');
     const url = location.origin + location.pathname + hash;
@@ -235,16 +238,103 @@ const App = (() => {
     const h = HEXAGRAMS[reading.originalId];
     const shareText = `【易經問卦】${h.fn}（${h.n}卦）\n${h.j}\n${h.core || ''}\n\n${url}`;
 
+    Analytics.trackShare('link', selectedDirection);
+
     if (navigator.share) {
-      navigator.share({ title: `易｜${h.fn}`, text: shareText, url })
-        .catch(() => {});
+      navigator.share({ title: `易｜${h.fn}`, text: shareText, url }).catch(() => {});
     } else {
-      navigator.clipboard.writeText(url).then(() => {
-        showToast('連結已複製到剪貼簿');
-      }).catch(() => {
-        showToast('請複製網址列的連結');
-      });
+      navigator.clipboard.writeText(url)
+        .then(() => showToast('連結已複製到剪貼簿'))
+        .catch(() => showToast('請複製網址列的連結'));
     }
+  }
+
+  // === 儲存圖片 ===
+  function shareImage() {
+    if (!reading || typeof html2canvas === 'undefined') {
+      showToast('圖片功能載入中，請稍候…');
+      return;
+    }
+    const h = HEXAGRAMS[reading.originalId];
+    const sym = hexSymbol(reading.originalId);
+
+    // 建立離屏卡片
+    const card = document.createElement('div');
+    card.style.cssText = [
+      'position:fixed', 'left:-9999px', 'top:0',
+      'width:600px', 'padding:56px 48px 48px',
+      'background:linear-gradient(160deg,#06000f 0%,#130826 100%)',
+      'border:1px solid rgba(242,201,76,0.4)',
+      'border-radius:24px', 'font-family:MasaFont,sans-serif',
+      'color:#fff', 'text-align:center', 'box-sizing:border-box'
+    ].join(';');
+
+    card.innerHTML = `
+      <div style="font-size:96px;line-height:1;color:#f2c94c;
+                  text-shadow:0 0 40px rgba(242,201,76,0.5);margin-bottom:16px">${sym}</div>
+      <div style="font-size:36px;color:#f2c94c;letter-spacing:.15em;margin-bottom:6px">${h.n}卦</div>
+      <div style="font-size:18px;color:rgba(255,255,255,0.7);letter-spacing:.2em;margin-bottom:24px">${h.fn}</div>
+      <div style="font-size:15px;color:rgba(255,255,255,0.5);font-style:italic;margin-bottom:32px;
+                  border-top:1px solid rgba(242,201,76,0.2);border-bottom:1px solid rgba(242,201,76,0.2);
+                  padding:16px 0">${h.j}</div>
+      <div style="font-size:22px;color:#ffe880;line-height:1.9;letter-spacing:.05em;min-height:60px">
+        ${h.core || ''}
+      </div>
+      <div style="margin-top:40px;font-size:13px;color:rgba(255,255,255,0.3);letter-spacing:.1em">
+        易 — 線上問卦 · biology-c.github.io/I-Ching-reading
+      </div>`;
+
+    document.body.appendChild(card);
+
+    showToast('正在生成圖片…');
+    Analytics.trackShare('image', selectedDirection);
+
+    html2canvas(card, { backgroundColor: null, scale: 2, useCORS: true }).then(canvas => {
+      document.body.removeChild(card);
+      canvas.toBlob(blob => {
+        if (navigator.share && navigator.canShare && navigator.canShare({ files: [new File([blob], 'yi.png', { type: 'image/png' })] })) {
+          navigator.share({ files: [new File([blob], 'yi.png', { type: 'image/png' })], title: `易｜${h.fn}` }).catch(() => downloadImage(canvas, h.n));
+        } else {
+          downloadImage(canvas, h.n);
+        }
+      }, 'image/png');
+    }).catch(() => {
+      document.body.removeChild(card);
+      showToast('圖片生成失敗，請截圖分享');
+    });
+  }
+
+  function downloadImage(canvas, name) {
+    const a = document.createElement('a');
+    a.download = `yi_${name}卦.png`;
+    a.href = canvas.toDataURL('image/png');
+    a.click();
+    showToast('圖片已儲存');
+  }
+
+  // === 意見回饋 ===
+  function openFeedback() {
+    feedbackRating = 0;
+    document.querySelectorAll('.star').forEach(s => s.classList.remove('active'));
+    document.getElementById('feedback-text').value = '';
+    document.getElementById('feedback-modal').classList.add('show');
+  }
+
+  function initFeedbackModal() {
+    document.querySelectorAll('.star').forEach(star => {
+      star.addEventListener('click', () => {
+        feedbackRating = parseInt(star.dataset.v);
+        document.querySelectorAll('.star').forEach(s =>
+          s.classList.toggle('active', parseInt(s.dataset.v) <= feedbackRating));
+      });
+    });
+    document.getElementById('btn-feedback-cancel')?.addEventListener('click', () =>
+      document.getElementById('feedback-modal').classList.remove('show'));
+    document.getElementById('btn-feedback-submit')?.addEventListener('click', () => {
+      Analytics.trackFeedback(feedbackRating);
+      document.getElementById('feedback-modal').classList.remove('show');
+      showToast('感謝你的回饋 🙏');
+    });
   }
 
   function showToast(msg) {
@@ -392,23 +482,49 @@ const App = (() => {
 
     // 底部操作
     html += `<div class="result-actions">
-      <button class="btn btn--primary" id="btn-restart" style="margin-right:1rem">再問一卦</button>
-      <button class="btn btn--share" id="btn-share">分享結果</button>
-      <button class="btn btn--ghost" onclick="App.goTo('home')" style="margin-left:1rem">回到首頁</button>
+      <button class="btn btn--primary" id="btn-restart">再問一卦</button>
+      <button class="btn btn--share" id="btn-share-image">儲存圖片</button>
+      <button class="btn btn--share" id="btn-share-link">分享連結</button>
+      <button class="btn btn--ghost" onclick="App.goTo('home')">回到首頁</button>
     </div>
-    <div id="share-toast" class="share-toast" aria-live="polite"></div>`;
+    <div class="result-footer-btns">
+      <button class="btn-icon" id="btn-like" title="喜歡這一卦">
+        <span class="icon-heart">♡</span>
+        <span class="icon-label">喜歡</span>
+      </button>
+      <button class="btn-icon" id="btn-feedback" title="意見回饋">
+        <span class="icon-msg">✉</span>
+        <span class="icon-label">回饋</span>
+      </button>
+    </div>`;
 
     container.innerHTML = html;
 
-    // 重綁再問一卦
+    // 再問一卦
     document.getElementById('btn-restart')?.addEventListener('click', () => {
       coinTosses = []; reading = null; resetCoinUI();
       history.replaceState(null, '', location.pathname);
       goTo('home');
     });
 
-    // 分享按鈕
-    document.getElementById('btn-share')?.addEventListener('click', () => shareResult());
+    // 儲存圖片
+    document.getElementById('btn-share-image')?.addEventListener('click', () => shareImage());
+
+    // 分享連結
+    document.getElementById('btn-share-link')?.addEventListener('click', () => shareLink());
+
+    // 愛心
+    document.getElementById('btn-like')?.addEventListener('click', () => {
+      const btn = document.getElementById('btn-like');
+      btn.querySelector('.icon-heart').textContent = '♥';
+      btn.classList.add('liked');
+      btn.disabled = true;
+      Analytics.trackLike(selectedDirection);
+      showToast('已記下你的喜歡 ♥');
+    });
+
+    // 意見回饋
+    document.getElementById('btn-feedback')?.addEventListener('click', () => openFeedback());
 
     goTo('result');
   }

@@ -8,6 +8,14 @@
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/style2.css">
   <link rel="stylesheet" href="css/style3.css">
+  <!-- Google Analytics — 請將 G-XXXXXXXXXX 替換為你的 Measurement ID -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-XXXXXXXXXX');
+  </script>
 </head>
 <body>
   <div class="app-background"></div>
@@ -127,12 +135,36 @@
     </div>
   </div>
 
+  <!-- 意見回饋 Modal -->
+  <div id="feedback-modal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-title">你的想法很重要</div>
+      <div class="star-rating" id="star-rating">
+        <span class="star" data-v="1">★</span>
+        <span class="star" data-v="2">★</span>
+        <span class="star" data-v="3">★</span>
+        <span class="star" data-v="4">★</span>
+        <span class="star" data-v="5">★</span>
+      </div>
+      <textarea id="feedback-text" class="feedback-textarea" placeholder="說說你的想法、建議，或這一卦對你的意義…" rows="4"></textarea>
+      <div class="btn-row">
+        <button class="btn btn--ghost" id="btn-feedback-cancel">取消</button>
+        <button class="btn btn--primary" id="btn-feedback-submit">送出</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 全域 Toast -->
+  <div id="share-toast" class="share-toast" aria-live="polite"></div>
+
   <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script src="js/hexagram-data.js"></script>
   <script src="js/hexagram-data-2.js"></script>
   <script src="js/hexagram-data-3.js"></script>
   <script src="js/hexagram-data-4.js"></script>
   <script src="js/divination.js"></script>
+  <script src="js/analytics.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>
