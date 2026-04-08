@@ -265,7 +265,7 @@ const App = (() => {
       'width:600px', 'padding:56px 48px 48px',
       'background:linear-gradient(160deg,#06000f 0%,#130826 100%)',
       'border:1px solid rgba(242,201,76,0.4)',
-      'border-radius:24px', 'font-family:MasaFont,sans-serif',
+      'border-radius:24px', 'font-family:GenJyuu,sans-serif',
       'color:#fff', 'text-align:center', 'box-sizing:border-box'
     ].join(';');
 

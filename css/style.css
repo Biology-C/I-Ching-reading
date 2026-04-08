@@ -1,42 +1,35 @@
 /* ============================================
    易經問卦工具 — 設計系統
    ============================================ */
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
-
 @font-face {
-  font-family: 'MasaFont';
+  font-family: 'GenJyuu';
   font-weight: 200;
   font-display: swap;
-  src: url('https://cdn.jsdelivr.net/gh/max32002/masafont@2.1/webfont/MasaFont-ExtraLight.woff2') format('woff2'),
-       url('https://cdn.jsdelivr.net/gh/max32002/masafont@2.1/webfont/MasaFont-ExtraLight.woff') format('woff');
+  src: url('../fonts/GenJyuuGothicX-ExtraLight.woff2') format('woff2');
 }
 @font-face {
-  font-family: 'MasaFont';
+  font-family: 'GenJyuu';
   font-weight: 300;
   font-display: swap;
-  src: url('https://cdn.jsdelivr.net/gh/max32002/masafont@2.1/webfont/MasaFont-Light.woff2') format('woff2'),
-       url('https://cdn.jsdelivr.net/gh/max32002/masafont@2.1/webfont/MasaFont-Light.woff') format('woff');
+  src: url('../fonts/GenJyuuGothicX-Light.woff2') format('woff2');
 }
 @font-face {
-  font-family: 'MasaFont';
+  font-family: 'GenJyuu';
   font-weight: 400;
   font-display: swap;
-  src: url('https://cdn.jsdelivr.net/gh/max32002/masafont@2.1/webfont/MasaFont-Regular.woff2') format('woff2'),
-       url('https://cdn.jsdelivr.net/gh/max32002/masafont@2.1/webfont/MasaFont-Regular.woff') format('woff');
+  src: url('../fonts/GenJyuuGothicX-Normal.woff2') format('woff2');
 }
 @font-face {
-  font-family: 'MasaFont';
+  font-family: 'GenJyuu';
   font-weight: 500;
   font-display: swap;
-  src: url('https://cdn.jsdelivr.net/gh/max32002/masafont@2.1/webfont/MasaFont-Medium.woff2') format('woff2'),
-       url('https://cdn.jsdelivr.net/gh/max32002/masafont@2.1/webfont/MasaFont-Medium.woff') format('woff');
+  src: url('../fonts/GenJyuuGothicX-Medium.woff2') format('woff2');
 }
 @font-face {
-  font-family: 'MasaFont';
+  font-family: 'GenJyuu';
   font-weight: 700;
   font-display: swap;
-  src: url('https://cdn.jsdelivr.net/gh/max32002/masafont@2.1/webfont/MasaFont-Bold.woff2') format('woff2'),
-       url('https://cdn.jsdelivr.net/gh/max32002/masafont@2.1/webfont/MasaFont-Bold.woff') format('woff');
+  src: url('../fonts/GenJyuuGothicX-Bold.woff2') format('woff2');
 }
 
 :root {
@@ -56,9 +49,9 @@
   --study-color: #5da4e8; --study-glow: rgba(93,164,232,0.3);
   --career-color: #5de8a0; --career-glow: rgba(93,232,160,0.3);
   --wealth-color: #e8c85d; --wealth-glow: rgba(232,200,93,0.3);
-  --font-display: 'MasaFont','Noto Sans TC',sans-serif;
-  --font-serif: 'MasaFont','Noto Sans TC',sans-serif;
-  --font-sans: 'MasaFont','Noto Sans TC',sans-serif;
+  --font-display: 'GenJyuu','Noto Sans TC',sans-serif;
+  --font-serif: 'GenJyuu','Noto Sans TC',sans-serif;
+  --font-sans: 'GenJyuu','Noto Sans TC',sans-serif;
   --ease-smooth: cubic-bezier(0.4,0,0.2,1);
   --ease-bounce: cubic-bezier(0.34,1.56,0.64,1);
   --ease-dramatic: cubic-bezier(0.77,0,0.175,1);
@@ -67,7 +60,7 @@
 
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 html{font-size:18.4px;scroll-behavior:smooth}
-body{font-family:'MasaFont','Noto Sans TC',sans-serif;color:var(--text-primary);background:var(--bg-primary);min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased;line-height:1.65}
+body{font-family:'GenJyuu','Noto Sans TC',sans-serif;color:var(--text-primary);background:var(--bg-primary);min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased;line-height:1.65}
 
 #particle-canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none}
 .app-background{position:fixed;top:0;left:0;width:100%;height:100%;background:radial-gradient(ellipse at 50% 0%,var(--bg-secondary) 0%,var(--bg-primary) 70%);z-index:-1}
