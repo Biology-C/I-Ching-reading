@@ -376,6 +376,12 @@ const App = (() => {
 
     let html = '';
 
+    // ── scroll hint ──
+    html += `<div class="scroll-hint" id="scroll-hint">
+      <span class="scroll-hint-arrow">︾</span>
+      <span class="scroll-hint-text">下滑查看解卦</span>
+    </div>`;
+
     // ── 結果頭部 ──
     html += `<div class="result-header">
       <div class="result-symbol">${sym}</div>
@@ -527,6 +533,25 @@ const App = (() => {
     document.getElementById('btn-feedback')?.addEventListener('click', () => openFeedback());
 
     goTo('result');
+
+    // 進入結果頁後輕彈頁面，提示可下滑
+    setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      setTimeout(() => {
+        window.scrollTo({ top: 80, behavior: 'smooth' });
+        setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 600);
+      }, 400);
+
+      // 使用者一開始滾動就隱藏 hint
+      const hint = document.getElementById('scroll-hint');
+      const hideHint = () => {
+        if (hint) hint.classList.add('hidden');
+        window.removeEventListener('scroll', hideHint);
+      };
+      window.addEventListener('scroll', hideHint, { passive: true });
+      // 10 秒後自動消失
+      setTimeout(hideHint, 10000);
+    }, 800);
   }
 
   // === 爻辭卡片 ===

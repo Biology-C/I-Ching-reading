@@ -101,6 +101,14 @@
 
 @media(max-width:380px){.direction-grid{grid-template-columns:1fr}}
 
+/* Scroll hint */
+.scroll-hint{position:fixed;bottom:2.2rem;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:.3rem;z-index:50;pointer-events:none;animation:hintFade 1s ease .6s both}
+.scroll-hint.hidden{opacity:0;transition:opacity .5s}
+.scroll-hint-arrow{font-size:1.6rem;color:var(--gold-primary);animation:bounce 1.4s ease-in-out infinite}
+.scroll-hint-text{font-size:.78rem;color:var(--text-dim);letter-spacing:.15em}
+@keyframes hintFade{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(6px)}}
+
 /* 分享按鈕 */
 .btn--share{background:linear-gradient(135deg,rgba(212,175,55,0.15),rgba(212,175,55,0.05));border:1px solid var(--gold-primary);color:var(--gold-primary);transition:all .2s}
 .btn--share:hover{background:rgba(212,175,55,0.25);box-shadow:0 0 20px var(--gold-glow)}
