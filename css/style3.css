@@ -18,7 +18,7 @@
 /* 核心金句 */
 .core-answer{background:linear-gradient(135deg,rgba(212,175,55,0.08) 0%,rgba(26,10,46,0.9) 100%);border:1px solid var(--card-border);border-radius:var(--radius-lg);padding:4rem 2.5rem;margin-bottom:4rem;text-align:center;position:relative;overflow:hidden}
 .core-answer::before{content:'\201C';position:absolute;top:-10px;left:20px;font-size:8rem;font-family:var(--font-serif);color:var(--gold-glow);line-height:1}
-.core-answer-text{font-family:var(--font-serif);font-size:clamp(1.3rem,3.5vw,1.8rem);font-weight:400;color:var(--gold-light);line-height:1.8;position:relative;z-index:1}
+.core-answer-text{font-family:var(--font-serif);font-size:clamp(1.3rem,3.5vw,1.8rem);font-weight:400;color:var(--gold-light);line-height:2.0;position:relative;z-index:1}
 
 /* 卦象圖形 */
 .hexagram-visual{display:flex;flex-direction:column-reverse;align-items:center;gap:10px;margin:2.5rem auto}
@@ -28,7 +28,7 @@
 /* 卡片 */
 .allegory-card,.advice-card,.poem-card{background:var(--card-bg);border:1px solid var(--card-border);border-radius:var(--radius-md);padding:2.5rem;margin-bottom:1.5rem;backdrop-filter:blur(10px)}
 .section-title{font-family:var(--font-display);font-size:1.2rem;color:var(--gold-primary);margin-bottom:1rem}
-.allegory-text{font-family:var(--font-serif);font-size:1rem;color:var(--text-primary);line-height:2;letter-spacing:.02em}
+.allegory-text{font-family:var(--font-serif);font-size:1rem;color:var(--text-primary);line-height:2.2;letter-spacing:.02em}
 
 /* 方向建議 */
 .advice-card.highlighted{border-color:var(--highlight-color,var(--gold-primary));box-shadow:0 0 30px var(--highlight-glow,var(--gold-glow));background:linear-gradient(135deg,var(--card-bg) 0%,rgba(212,175,55,0.05) 100%)}
@@ -40,12 +40,12 @@
 .advice-icon{font-size:1.4rem}
 .advice-title{font-family:var(--font-serif);font-size:1.1rem;color:var(--highlight-color,var(--gold-primary));font-weight:700}
 .advice-summary{font-size:.85rem;color:var(--text-secondary);margin-bottom:.5rem;font-style:italic}
-.advice-detail{font-size:.95rem;color:var(--text-primary);line-height:1.8}
+.advice-detail{font-size:.95rem;color:var(--text-primary);line-height:2.0}
 
 /* 籤詩 */
 .poem-card{text-align:center;background:linear-gradient(135deg,rgba(212,175,55,0.05) 0%,var(--card-bg) 100%)}
-.poem-verses{font-family:var(--font-serif);font-size:1.15rem;color:var(--text-primary);line-height:2.5;letter-spacing:.15em}
-.poem-interpretation{font-size:.85rem;color:var(--text-secondary);margin-top:1.5rem;padding-top:1.5rem;border-top:1px solid var(--card-border);line-height:1.8;text-align:left}
+.poem-verses{font-family:var(--font-serif);font-size:1.15rem;color:var(--text-primary);line-height:2.75;letter-spacing:.15em}
+.poem-interpretation{font-size:.85rem;color:var(--text-secondary);margin-top:1.5rem;padding-top:1.5rem;border-top:1px solid var(--card-border);line-height:2.0;text-align:left}
 
 /* 警示標籤 */
 .warnings{display:flex;flex-wrap:wrap;gap:.5rem;justify-content:center;margin-bottom:4rem}
