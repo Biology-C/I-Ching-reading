@@ -26,6 +26,13 @@
 .quick-answer-detail{font-size:.92rem;color:var(--text-secondary);line-height:1.85;max-width:30rem;margin:0 auto}
 .quick-answer-meta{font-size:.78rem;color:var(--text-dim);margin-top:1rem;letter-spacing:.08em}
 
+/* 每日格言 */
+.daily-wisdom-card{background:linear-gradient(135deg,rgba(255,255,255,0.04),rgba(242,201,76,0.04));border:1px solid rgba(242,201,76,0.18);border-radius:var(--radius-md);padding:1.35rem 1.4rem;margin:0 auto 2rem;max-width:38rem;text-align:center;box-shadow:0 0 24px rgba(0,0,0,0.12)}
+.daily-wisdom-card--result{margin-bottom:2.5rem}
+.daily-wisdom-label{font-size:.76rem;color:var(--text-dim);letter-spacing:.18em;text-transform:uppercase}
+.daily-wisdom-date{font-size:.78rem;color:var(--gold-light);margin-top:.35rem;letter-spacing:.08em}
+.daily-wisdom-text{font-family:var(--font-serif);font-size:1.02rem;color:var(--text-primary);line-height:1.9;margin-top:.85rem}
+
 /* 核心金句 */
 .core-answer{background:linear-gradient(135deg,rgba(212,175,55,0.08) 0%,rgba(26,10,46,0.9) 100%);border:1px solid var(--card-border);border-radius:var(--radius-lg);padding:4rem 2.5rem;margin-bottom:4rem;text-align:center;position:relative;overflow:hidden}
 .core-answer::before{content:'\201C';position:absolute;top:-10px;left:20px;font-size:8rem;font-family:var(--font-serif);color:var(--gold-glow);line-height:1}

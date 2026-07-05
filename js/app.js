@@ -90,10 +90,16 @@ const App = (() => {
 
   function updateMethodContext() {
     const subtitle = document.getElementById('method-subtitle');
+    const dailyWisdom = document.getElementById('daily-wisdom-method');
     if (!subtitle) return;
     subtitle.textContent = selectedDirection
       ? getDirectionMeta(selectedDirection).prompt
       : defaultMethodPrompt;
+    if (dailyWisdom) {
+      dailyWisdom.innerHTML = selectedDirection
+        ? renderDailyWisdomCard(selectedDirection)
+        : renderDailyWisdomCard('general');
+    }
   }
 
   function scoreToVerdict(score) {
@@ -163,6 +169,31 @@ const App = (() => {
       <div class="quick-answer-headline">${quick.headline}</div>
       <div class="quick-answer-detail">${quick.detail}</div>
       <div class="quick-answer-meta">${quick.meta}</div>
+    </div>`;
+  }
+
+  function escapeHtml(value) {
+    return String(value)
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#39;');
+  }
+
+  function getDailyWisdom(direction) {
+    if (typeof DailyWisdom === 'undefined') return null;
+    return DailyWisdom.get(direction || 'general');
+  }
+
+  function renderDailyWisdomCard(direction, extraClass = '') {
+    const wisdom = getDailyWisdom(direction);
+    if (!wisdom) return '';
+    const className = ['daily-wisdom-card', extraClass].filter(Boolean).join(' ');
+    return `<div class="${className}">
+      <div class="daily-wisdom-label">今日格言・參考一下</div>
+      <div class="daily-wisdom-date">${escapeHtml(wisdom.dateLabel)}</div>
+      <div class="daily-wisdom-text">${escapeHtml(wisdom.text)}</div>
     </div>`;
   }
 
@@ -608,6 +639,8 @@ const App = (() => {
         ${direction.icon} 所問方向：${direction.label}
       </span>
     </div>`;
+
+    html += renderDailyWisdomCard(selectedDirection || 'general', 'daily-wisdom-card--result');
 
     if (selectedDirection === 'yesno') {
       html += renderYesNoCard(r);
