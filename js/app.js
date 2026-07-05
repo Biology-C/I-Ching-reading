@@ -10,8 +10,45 @@ const App = (() => {
   let reading = null;
   let feedbackRating = 0;
 
-  const dirLabels = {love:'感情',study:'學業',career:'工作',wealth:'財運'};
-  const dirIcons = {love:'❤️',study:'📚',career:'💼',wealth:'💰'};
+  const defaultMethodPrompt = '心中默念你的問題，然後選擇一種方式';
+  const directionMeta = {
+    love: {
+      label: '感情',
+      icon: '❤️',
+      prompt: '把問題放進感情、關係或人際裡，靜下來想清楚你真正想問的是什麼。'
+    },
+    study: {
+      label: '學業',
+      icon: '📚',
+      prompt: '適合問考試、學習、進修與選擇，先想好你最在意的結果。'
+    },
+    career: {
+      label: '工作',
+      icon: '💼',
+      prompt: '適合問工作、職涯、合作與決策，問題越具體，卦意越好讀。'
+    },
+    wealth: {
+      label: '財運',
+      icon: '💰',
+      prompt: '適合問收入、投資、金錢安排，先把你想判斷的那一件事放在心裡。'
+    },
+    yesno: {
+      label: '是／否',
+      icon: '☯️',
+      prompt: '適合問生活小事：要不要做、該不該聯絡、今天行不行。問題越簡單，答案越清楚。'
+    }
+  };
+  // 生活小事的快速判斷以本卦為主、變卦為修正：1=可行，0=觀望，-1=不宜。
+  const yesNoHexagramScore = {
+    1: 1, 2: 1, 3: 0, 4: 0, 5: 0, 6: -1, 7: 0, 8: 1,
+    9: 0, 10: 0, 11: 1, 12: -1, 13: 1, 14: 1, 15: 1, 16: 1,
+    17: 1, 18: 0, 19: 1, 20: 0, 21: 1, 22: 0, 23: -1, 24: 1,
+    25: 1, 26: 1, 27: 0, 28: -1, 29: -1, 30: 1, 31: 1, 32: 1,
+    33: -1, 34: 0, 35: 1, 36: -1, 37: 1, 38: 0, 39: -1, 40: 1,
+    41: 0, 42: 1, 43: 1, 44: -1, 45: 1, 46: 1, 47: -1, 48: 0,
+    49: 0, 50: 1, 51: 0, 52: -1, 53: 0, 54: -1, 55: 1, 56: 0,
+    57: 1, 58: 1, 59: 0, 60: 0, 61: 1, 62: 0, 63: 0, 64: 0
+  };
 
   // === 粒子系統 ===
   function initParticles() {
@@ -45,6 +82,88 @@ const App = (() => {
     draw();
   }
 
+  function getDirectionMeta(direction) {
+    return directionMeta[direction] || directionMeta.love;
+  }
+
+  function updateMethodContext() {
+    const subtitle = document.getElementById('method-subtitle');
+    if (!subtitle) return;
+    subtitle.textContent = selectedDirection
+      ? getDirectionMeta(selectedDirection).prompt
+      : defaultMethodPrompt;
+  }
+
+  function scoreToVerdict(score) {
+    if (score > 0) return 'yes';
+    if (score < 0) return 'no';
+    return 'wait';
+  }
+
+  function getYesNoAnswer(readingData) {
+    const labelMap = { yes: '是', no: '否', wait: '先等等' };
+    const stateMap = { yes: '可行', no: '不宜', wait: '觀望' };
+    const headlineMap = {
+      yes: '可以做，但照節奏走。',
+      no: '現在不宜，先不要硬推。',
+      wait: '不是完全不行，只是時機未到。'
+    };
+    const singleDetails = {
+      yes: '這件事整體可行，照著原本節奏做，通常會比一直猶豫更順。',
+      no: '卦象不太支持現在硬做，先停一下，通常比硬衝更省代價。',
+      wait: '答案還在路上。先觀察、補資訊或等時機，會比現在更有把握。'
+    };
+    const comboDetails = {
+      'yes:yes': '本卦和後勢都站在你這邊，可以做，但記得別把順風用成逞強。',
+      'yes:wait': '可以做，但先小步確認會更穩。別急著一次把所有籌碼押上。',
+      'yes:no': '你心裡想做沒有錯，但後勢容易轉卡，先補足條件再決定更好。',
+      'wait:yes': '方向並不差，只是還差一個關鍵條件。等等再動，成功率會更高。',
+      'wait:wait': '卦象沒有明確偏向，代表問題本身還需要更多資訊或時間發酵。',
+      'wait:no': '局勢正在收緊，現在先不要硬推，會比勉強前進省力得多。',
+      'no:yes': '眼下不宜，但不是永遠不行。若能調整方式或換個時機，後面還有轉機。',
+      'no:wait': '先踩煞車。這件事至少要退一步整理，之後再看會更清楚。',
+      'no:no': '卦象前後都不支持，勉強進行只會更耗神，先不要比較好。'
+    };
+
+    const originalScore = yesNoHexagramScore[readingData.originalId] ?? 0;
+    const originalVerdict = scoreToVerdict(originalScore);
+    const changedScore = readingData.changedId
+      ? (yesNoHexagramScore[readingData.changedId] ?? 0)
+      : originalScore;
+    const changedVerdict = scoreToVerdict(changedScore);
+
+    let answer = originalVerdict;
+    if (readingData.changedId) {
+      if (originalVerdict === 'yes') answer = changedVerdict === 'no' ? 'wait' : 'yes';
+      else if (originalVerdict === 'no') answer = changedVerdict === 'yes' ? 'wait' : 'no';
+      else if (changedVerdict === 'no') answer = 'no';
+      else answer = 'wait';
+    }
+
+    return {
+      answer,
+      label: labelMap[answer],
+      headline: headlineMap[answer],
+      detail: readingData.changedId
+        ? comboDetails[`${originalVerdict}:${changedVerdict}`]
+        : singleDetails[answer],
+      meta: readingData.changedId
+        ? `本卦：${stateMap[originalVerdict]} · 變卦：${stateMap[changedVerdict]}`
+        : `本卦：${stateMap[originalVerdict]}`
+    };
+  }
+
+  function renderYesNoCard(readingData) {
+    const quick = getYesNoAnswer(readingData);
+    return `<div class="quick-answer-card" data-answer="${quick.answer}">
+      <div class="quick-answer-label">生活小事・快速判斷</div>
+      <div class="quick-answer-value">${quick.label}</div>
+      <div class="quick-answer-headline">${quick.headline}</div>
+      <div class="quick-answer-detail">${quick.detail}</div>
+      <div class="quick-answer-meta">${quick.meta}</div>
+    </div>`;
+  }
+
   // === 場景管理 ===
   function goTo(scene) {
     document.querySelectorAll('.scene').forEach(s => s.classList.remove('active'));
@@ -66,6 +185,7 @@ const App = (() => {
   // === 事件綁定 ===
   function init() {
     initParticles();
+    updateMethodContext();
 
     // 首頁點擊
     document.getElementById('home-enter')?.addEventListener('click', () => goTo('direction'));
@@ -74,6 +194,7 @@ const App = (() => {
     document.querySelectorAll('.direction-card').forEach(card => {
       card.addEventListener('click', () => {
         selectedDirection = card.dataset.direction;
+        updateMethodContext();
         goTo('method');
       });
     });
@@ -95,6 +216,26 @@ const App = (() => {
       showAnimation();
     });
 
+    // 數字起卦 - 輸入控制（限3位、自動跳格、blur補零）
+    const numberInputs = Array.from(document.querySelectorAll('.number-input'));
+    numberInputs.forEach((inp, idx) => {
+      inp.addEventListener('input', () => {
+        // 只保留數字字符
+        inp.value = inp.value.replace(/[^0-9]/g, '');
+        // 達到3位自動跳到下一格
+        if (inp.value.length === 3 && idx < numberInputs.length - 1) {
+          numberInputs[idx + 1].focus();
+          numberInputs[idx + 1].select();
+        }
+      });
+      inp.addEventListener('blur', () => {
+        const raw = inp.value.replace(/[^0-9]/g, '');
+        if (raw.length > 0 && raw.length < 3) {
+          inp.value = raw.padStart(3, '0');
+        }
+      });
+    });
+
     // 數字起卦 - 隨機填入
     document.getElementById('btn-random-fill')?.addEventListener('click', () => {
       document.querySelectorAll('.number-input').forEach(input => {
@@ -108,8 +249,11 @@ const App = (() => {
       const numbers = [];
       let valid = true;
       inputs.forEach(inp => {
-        const v = parseInt(inp.value);
-        if (isNaN(v) || v < 100 || v > 999) { valid = false; inp.style.borderColor = '#e85d75'; }
+        // blur補零後再解析
+        const raw = inp.value.replace(/[^0-9]/g, '');
+        if (raw.length > 0 && raw.length < 3) inp.value = raw.padStart(3, '0');
+        const v = parseInt(inp.value, 10);
+        if (isNaN(v) || v < 1 || v > 999) { valid = false; inp.style.borderColor = '#e85d75'; }
         else { numbers.push(v); inp.style.borderColor = ''; }
       });
       if (!valid) return;
@@ -236,7 +380,10 @@ const App = (() => {
     history.replaceState(null, '', hash);
 
     const h = HEXAGRAMS[reading.originalId];
-    const shareText = `【易經問卦】${h.fn}（${h.n}卦）\n${h.j}\n${h.core || ''}\n\n${url}`;
+    const direction = getDirectionMeta(selectedDirection || 'love');
+    const quick = selectedDirection === 'yesno' ? getYesNoAnswer(reading) : null;
+    const quickText = quick ? `\n快速判斷：${quick.label}｜${quick.headline}` : '';
+    const shareText = `【易經問卦】${h.fn}（${h.n}卦）\n所問方向：${direction.label}${quickText}\n${h.j}\n${h.core || ''}\n\n${url}`;
 
     Analytics.trackShare('link', selectedDirection);
 
@@ -257,6 +404,9 @@ const App = (() => {
     }
     const h = HEXAGRAMS[reading.originalId];
     const sym = hexSymbol(reading.originalId);
+    const direction = getDirectionMeta(selectedDirection || 'love');
+    const quick = selectedDirection === 'yesno' ? getYesNoAnswer(reading) : null;
+    const quickColor = quick ? ({ yes: '#70e0aa', no: '#ff8b96', wait: '#8ad7ff' }[quick.answer]) : '';
 
     // 建立離屏卡片
     const card = document.createElement('div');
@@ -274,6 +424,14 @@ const App = (() => {
                   text-shadow:0 0 40px rgba(242,201,76,0.5);margin-bottom:16px">${sym}</div>
       <div style="font-size:36px;color:#f2c94c;letter-spacing:.15em;margin-bottom:6px">${h.n}卦</div>
       <div style="font-size:18px;color:rgba(255,255,255,0.7);letter-spacing:.2em;margin-bottom:24px">${h.fn}</div>
+      <div style="font-size:13px;color:rgba(255,255,255,0.45);letter-spacing:.14em;margin-bottom:${quick ? '14px' : '24px'}">
+        所問方向：${direction.icon} ${direction.label}
+      </div>
+      ${quick ? `<div style="margin-bottom:22px">
+        <div style="font-size:13px;color:rgba(255,255,255,0.45);letter-spacing:.14em;margin-bottom:8px">生活小事・快速判斷</div>
+        <div style="font-size:44px;color:${quickColor};line-height:1.1;letter-spacing:.08em;margin-bottom:8px">${quick.label}</div>
+        <div style="font-size:15px;color:rgba(255,255,255,0.72);line-height:1.7">${quick.headline}</div>
+      </div>` : ''}
       <div style="font-size:15px;color:rgba(255,255,255,0.5);font-style:italic;margin-bottom:32px;
                   border-top:1px solid rgba(242,201,76,0.2);border-bottom:1px solid rgba(242,201,76,0.2);
                   padding:16px 0">${h.j}</div>
@@ -371,8 +529,8 @@ const App = (() => {
     const container = document.getElementById('result-content');
     if (!container) return;
 
+    const direction = getDirectionMeta(selectedDirection || 'love');
     const sym = hexSymbol(r.originalId);
-    const chSym = r.changedId ? hexSymbol(r.changedId) : '';
 
     let html = '';
 
@@ -393,9 +551,13 @@ const App = (() => {
     // ── 方向標記 ──
     html += `<div style="text-align:center;margin-bottom:2rem">
       <span style="font-size:0.85rem;color:var(--text-dim);letter-spacing:0.1em">
-        ${dirIcons[selectedDirection]} 所問方向：${dirLabels[selectedDirection]}
+        ${direction.icon} 所問方向：${direction.label}
       </span>
     </div>`;
+
+    if (selectedDirection === 'yesno') {
+      html += renderYesNoCard(r);
+    }
 
     // ── 卦象圖示 ──
     html += renderHexagramVisual(r.yao, r.changingLines);

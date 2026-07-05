@@ -20,11 +20,11 @@ const Analytics = (() => {
   function emptyStats() {
     return {
       questions:       0,
-      by_direction:    { love:0, study:0, career:0, wealth:0 },
-      first_q:         { love:0, study:0, career:0, wealth:0 },
-      followup_q:      { love:0, study:0, career:0, wealth:0 },
-      share_link:      { love:0, study:0, career:0, wealth:0 },
-      share_image:     { love:0, study:0, career:0, wealth:0 },
+      by_direction:    { love:0, study:0, career:0, wealth:0, yesno:0 },
+      first_q:         { love:0, study:0, career:0, wealth:0, yesno:0 },
+      followup_q:      { love:0, study:0, career:0, wealth:0, yesno:0 },
+      share_link:      { love:0, study:0, career:0, wealth:0, yesno:0 },
+      share_image:     { love:0, study:0, career:0, wealth:0, yesno:0 },
       methods:         { instant:0, number:0, coin:0 },
       likes:           0,
       feedbacks:       0

@@ -56,6 +56,11 @@
         <div class="direction-label">財運</div>
         <div class="direction-desc">投資、理財、收入</div>
       </div>
+      <div class="direction-card direction-card--wide" data-direction="yesno" id="dir-yesno">
+        <span class="direction-icon">☯️</span>
+        <div class="direction-label">是／否</div>
+        <div class="direction-desc">生活小事、要不要、行不行</div>
+      </div>
     </div>
   </div>
 
@@ -63,7 +68,7 @@
   <div id="scene-method" class="scene">
     <button class="back-btn" data-back="direction">← </button>
     <div class="method-title">選擇起卦方式</div>
-    <div class="method-subtitle">心中默念你的問題，然後選擇一種方式</div>
+    <div class="method-subtitle" id="method-subtitle">心中默念你的問題，然後選擇一種方式</div>
 
     <div class="method-tabs">
       <button class="method-tab active" data-method="instant">⚡ 一念成卦</button>
@@ -79,25 +84,25 @@
 
     <!-- 數字起卦 -->
     <div id="panel-number" class="method-panel" style="max-width:420px;width:100%">
-      <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:1.5rem;text-align:center">輸入 6 組三位數（100-999），或點擊隨機填入</p>
+      <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:1.5rem;text-align:center">輸入 6 組數字（1–999），或點擊隨機填入</p>
       <div class="number-grid">
         <div class="number-input-group">
-          <label>初爻</label><input type="number" class="number-input" min="100" max="999" placeholder="---">
+          <label>初爻</label><input type="text" inputmode="numeric" maxlength="3" class="number-input" placeholder="---">
         </div>
         <div class="number-input-group">
-          <label>二爻</label><input type="number" class="number-input" min="100" max="999" placeholder="---">
+          <label>二爻</label><input type="text" inputmode="numeric" maxlength="3" class="number-input" placeholder="---">
         </div>
         <div class="number-input-group">
-          <label>三爻</label><input type="number" class="number-input" min="100" max="999" placeholder="---">
+          <label>三爻</label><input type="text" inputmode="numeric" maxlength="3" class="number-input" placeholder="---">
         </div>
         <div class="number-input-group">
-          <label>四爻</label><input type="number" class="number-input" min="100" max="999" placeholder="---">
+          <label>四爻</label><input type="text" inputmode="numeric" maxlength="3" class="number-input" placeholder="---">
         </div>
         <div class="number-input-group">
-          <label>五爻</label><input type="number" class="number-input" min="100" max="999" placeholder="---">
+          <label>五爻</label><input type="text" inputmode="numeric" maxlength="3" class="number-input" placeholder="---">
         </div>
         <div class="number-input-group">
-          <label>上爻</label><input type="number" class="number-input" min="100" max="999" placeholder="---">
+          <label>上爻</label><input type="text" inputmode="numeric" maxlength="3" class="number-input" placeholder="---">
         </div>
       </div>
       <div class="btn-row">
