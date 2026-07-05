@@ -24,62 +24,62 @@
 
   <!-- ═══ 場景 1：首頁 ═══ -->
   <div id="scene-home" class="scene active">
-    <div id="home-enter" style="cursor:pointer;text-align:center">
-      <div class="home-title">易</div>
-      <div class="home-subtitle">問 卦 · 解 卦</div>
-    </div>
+    <button type="button" id="home-enter" class="home-enter-btn" aria-label="開始問卦">
+      <span class="home-title">易</span>
+      <span class="home-subtitle">問 卦 · 解 卦</span>
+    </button>
     <div class="home-hint">靜心凝神，點擊開始</div>
   </div>
 
   <!-- ═══ 場景 2：選擇方向 ═══ -->
   <div id="scene-direction" class="scene">
-    <button class="back-btn" data-back="home">← </button>
+    <button type="button" class="back-btn" data-back="home">← </button>
     <div class="direction-title">你想問什麼方向？</div>
     <div class="direction-grid">
-      <div class="direction-card" data-direction="love" id="dir-love">
-        <span class="direction-icon">❤️</span>
-        <div class="direction-label">感情</div>
-        <div class="direction-desc">愛情、關係、人際</div>
-      </div>
-      <div class="direction-card" data-direction="study" id="dir-study">
-        <span class="direction-icon">📚</span>
-        <div class="direction-label">學業</div>
-        <div class="direction-desc">考試、學習、進修</div>
-      </div>
-      <div class="direction-card" data-direction="career" id="dir-career">
-        <span class="direction-icon">💼</span>
-        <div class="direction-label">工作</div>
-        <div class="direction-desc">事業、職涯、決策</div>
-      </div>
-      <div class="direction-card" data-direction="wealth" id="dir-wealth">
-        <span class="direction-icon">💰</span>
-        <div class="direction-label">財運</div>
-        <div class="direction-desc">投資、理財、收入</div>
-      </div>
-      <div class="direction-card direction-card--wide" data-direction="yesno" id="dir-yesno">
-        <span class="direction-icon">☯️</span>
-        <div class="direction-label">是／否</div>
-        <div class="direction-desc">生活小事、要不要、行不行</div>
-      </div>
+      <button type="button" class="direction-card" data-direction="love" id="dir-love">
+        <span class="direction-icon" aria-hidden="true">❤️</span>
+        <span class="direction-label">感情</span>
+        <span class="direction-desc">愛情、關係、人際</span>
+      </button>
+      <button type="button" class="direction-card" data-direction="study" id="dir-study">
+        <span class="direction-icon" aria-hidden="true">📚</span>
+        <span class="direction-label">學業</span>
+        <span class="direction-desc">考試、學習、進修</span>
+      </button>
+      <button type="button" class="direction-card" data-direction="career" id="dir-career">
+        <span class="direction-icon" aria-hidden="true">💼</span>
+        <span class="direction-label">工作</span>
+        <span class="direction-desc">事業、職涯、決策</span>
+      </button>
+      <button type="button" class="direction-card" data-direction="wealth" id="dir-wealth">
+        <span class="direction-icon" aria-hidden="true">💰</span>
+        <span class="direction-label">財運</span>
+        <span class="direction-desc">投資、理財、收入</span>
+      </button>
+      <button type="button" class="direction-card direction-card--wide" data-direction="yesno" id="dir-yesno">
+        <span class="direction-icon" aria-hidden="true">☯️</span>
+        <span class="direction-label">是／否</span>
+        <span class="direction-desc">生活小事、要不要、行不行</span>
+      </button>
     </div>
   </div>
 
   <!-- ═══ 場景 3：起卦方式 ═══ -->
   <div id="scene-method" class="scene">
-    <button class="back-btn" data-back="direction">← </button>
+    <button type="button" class="back-btn" data-back="direction">← </button>
     <div class="method-title">選擇起卦方式</div>
     <div class="method-subtitle" id="method-subtitle">心中默念你的問題，然後選擇一種方式</div>
 
     <div class="method-tabs">
-      <button class="method-tab active" data-method="instant">⚡ 一念成卦</button>
-      <button class="method-tab" data-method="number">🔢 數字起卦</button>
-      <button class="method-tab" data-method="coin">🪙 擲幣問天</button>
+      <button type="button" class="method-tab active" data-method="instant">⚡ 一念成卦</button>
+      <button type="button" class="method-tab" data-method="number">🔢 數字起卦</button>
+      <button type="button" class="method-tab" data-method="coin">🪙 擲幣問天</button>
     </div>
 
     <!-- 一念成卦 -->
     <div id="panel-instant" class="method-panel active" style="text-align:center">
       <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:2rem">閉上眼睛，在心中專注想著你的問題，然後點擊</p>
-      <button class="instant-btn" id="btn-instant">問 卦</button>
+      <button type="button" class="instant-btn" id="btn-instant">問 卦</button>
     </div>
 
     <!-- 數字起卦 -->
@@ -106,8 +106,8 @@
         </div>
       </div>
       <div class="btn-row">
-        <button class="btn" id="btn-random-fill">🎲 隨機填入</button>
-        <button class="btn btn--primary" id="btn-number-go">起 卦</button>
+        <button type="button" class="btn" id="btn-random-fill">🎲 隨機填入</button>
+        <button type="button" class="btn btn--primary" id="btn-number-go">起 卦</button>
       </div>
     </div>
 
@@ -119,8 +119,8 @@
         <div class="coin">？</div>
         <div class="coin">？</div>
       </div>
-      <div id="coin-progress" class="coin-progress">第 0 / 6 爻</div>
-      <button class="btn btn--primary" id="btn-toss" style="margin-top:1rem">擲 幣</button>
+      <div id="coin-progress" class="coin-progress" aria-live="polite">第 0 / 6 爻</div>
+      <button type="button" class="btn btn--primary" id="btn-toss" style="margin-top:1rem">擲 幣</button>
       <div id="coin-yao-display" class="yao-display"></div>
     </div>
   </div>
@@ -145,16 +145,16 @@
     <div class="modal-card">
       <div class="modal-title">你的想法很重要</div>
       <div class="star-rating" id="star-rating">
-        <span class="star" data-v="1">★</span>
-        <span class="star" data-v="2">★</span>
-        <span class="star" data-v="3">★</span>
-        <span class="star" data-v="4">★</span>
-        <span class="star" data-v="5">★</span>
+        <button type="button" class="star" data-v="1" aria-label="1 顆星" aria-pressed="false">★</button>
+        <button type="button" class="star" data-v="2" aria-label="2 顆星" aria-pressed="false">★</button>
+        <button type="button" class="star" data-v="3" aria-label="3 顆星" aria-pressed="false">★</button>
+        <button type="button" class="star" data-v="4" aria-label="4 顆星" aria-pressed="false">★</button>
+        <button type="button" class="star" data-v="5" aria-label="5 顆星" aria-pressed="false">★</button>
       </div>
-      <textarea id="feedback-text" class="feedback-textarea" placeholder="說說你的想法、建議，或這一卦對你的意義…" rows="4"></textarea>
+      <textarea id="feedback-text" class="feedback-textarea" placeholder="說說你的想法、建議，或這一卦對你的意義…" aria-label="意見內容" rows="4"></textarea>
       <div class="btn-row">
-        <button class="btn btn--ghost" id="btn-feedback-cancel">取消</button>
-        <button class="btn btn--primary" id="btn-feedback-submit">送出</button>
+        <button type="button" class="btn btn--ghost" id="btn-feedback-cancel">取消</button>
+        <button type="button" class="btn btn--primary" id="btn-feedback-submit">送出</button>
       </div>
     </div>
   </div>

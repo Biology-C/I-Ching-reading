@@ -73,8 +73,10 @@ body{font-family:'GenJyuu','Noto Sans TC',sans-serif;color:var(--text-primary);b
 .scene--result.active{position:relative}
 
 /* 場景1：首頁 */
+.home-enter-btn{background:none;border:0;padding:0;color:inherit;font:inherit;text-align:center;cursor:pointer}
 .home-title{font-family:var(--font-display);font-size:clamp(5rem,15vw,12rem);font-weight:400;color:var(--gold-primary);text-shadow:0 0 40px var(--gold-glow),0 0 80px rgba(212,175,55,0.15);animation:breathe 4s ease-in-out infinite;cursor:pointer;user-select:none}
 @keyframes breathe{0%,100%{transform:scale(1);text-shadow:0 0 40px var(--gold-glow)}50%{transform:scale(1.03);text-shadow:0 0 60px var(--gold-glow),0 0 120px rgba(212,175,55,0.25)}}
+.home-title,.home-subtitle{display:block}
 .home-subtitle{font-family:var(--font-display);font-size:clamp(1rem,2.5vw,1.4rem);color:var(--text-secondary);margin-top:2.5rem;letter-spacing:.3em;animation:fadeInUp 1.5s var(--ease-smooth) .5s both}
 .home-hint{font-size:.85rem;color:var(--text-dim);margin-top:4rem;animation:pulse 2.5s ease-in-out infinite,fadeInUp 1.5s var(--ease-smooth) 1s both}
 @keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
@@ -83,14 +85,28 @@ body{font-family:'GenJyuu','Noto Sans TC',sans-serif;color:var(--text-primary);b
 /* 場景2：選擇方向 */
 .direction-title{font-family:var(--font-serif);font-size:clamp(1.5rem,4vw,2.2rem);color:var(--gold-primary);margin-bottom:2.5rem;letter-spacing:.15em}
 .direction-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1.5rem;max-width:500px;width:100%}
-.direction-card{background:var(--card-bg);border:1px solid var(--card-border);border-radius:var(--radius-md);padding:2.5rem 1.5rem;text-align:center;cursor:pointer;transition:all .4s var(--ease-smooth);backdrop-filter:blur(10px);position:relative;overflow:hidden}
+.direction-card{appearance:none;width:100%;background:var(--card-bg);border:1px solid var(--card-border);border-radius:var(--radius-md);padding:2.5rem 1.5rem;text-align:center;cursor:pointer;transition:all .4s var(--ease-smooth);backdrop-filter:blur(10px);position:relative;overflow:hidden;color:inherit;font:inherit}
 .direction-card--wide{grid-column:1/-1}
-.direction-card:hover{border-color:rgba(212,175,55,0.6);transform:translateY(-6px);box-shadow:0 12px 40px rgba(0,0,0,0.4),0 0 30px var(--glow-color,var(--gold-glow))}
+.direction-card:hover,.direction-card:focus-visible{border-color:rgba(212,175,55,0.6);transform:translateY(-6px);box-shadow:0 12px 40px rgba(0,0,0,0.4),0 0 30px var(--glow-color,var(--gold-glow))}
 .direction-card[data-direction="love"]{--glow-color:var(--love-glow)}
 .direction-card[data-direction="study"]{--glow-color:var(--study-glow)}
 .direction-card[data-direction="career"]{--glow-color:var(--career-glow)}
 .direction-card[data-direction="wealth"]{--glow-color:var(--wealth-glow)}
 .direction-card[data-direction="yesno"]{--glow-color:var(--yesno-glow)}
 .direction-icon{font-size:2.8rem;margin-bottom:1rem;display:block}
+.direction-label,.direction-desc{display:block}
 .direction-label{font-family:var(--font-serif);font-size:1.3rem;color:var(--text-primary);letter-spacing:.1em}
 .direction-desc{font-size:.8rem;color:var(--text-secondary);margin-top:.5rem}
+
+.home-enter-btn:focus-visible,
+.direction-card:focus-visible,
+.method-tab:focus-visible,
+.instant-btn:focus-visible,
+.btn:focus-visible,
+.btn-icon:focus-visible,
+.back-btn:focus-visible,
+.feedback-textarea:focus-visible,
+.star-rating .star:focus-visible{
+  outline:2px solid var(--gold-primary);
+  outline-offset:4px;
+}

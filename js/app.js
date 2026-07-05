@@ -7,6 +7,8 @@ const App = (() => {
   let selectedDirection = '';
   let currentMethod = 'instant';
   let coinTosses = [];
+  let tossTimerIds = [];
+  let isTossAnimating = false;
   let reading = null;
   let feedbackRating = 0;
 
@@ -164,6 +166,25 @@ const App = (() => {
     </div>`;
   }
 
+  function scheduleTossTask(callback, delay) {
+    const id = window.setTimeout(() => {
+      tossTimerIds = tossTimerIds.filter(timerId => timerId !== id);
+      callback();
+    }, delay);
+    tossTimerIds.push(id);
+    return id;
+  }
+
+  function clearPendingTossTasks() {
+    tossTimerIds.forEach(window.clearTimeout);
+    tossTimerIds = [];
+  }
+
+  function setTossButtonState(disabled) {
+    const btn = document.getElementById('btn-toss');
+    if (btn) btn.disabled = disabled;
+  }
+
   // === 場景管理 ===
   function goTo(scene) {
     document.querySelectorAll('.scene').forEach(s => s.classList.remove('active'));
@@ -262,14 +283,14 @@ const App = (() => {
     });
 
     // 擲幣
-    coinTosses = [];
+    resetCoinUI();
     document.getElementById('btn-toss')?.addEventListener('click', tossOnce);
 
     // 返回按鈕
     document.querySelectorAll('.back-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const target = btn.dataset.back || 'home';
-        if (target === 'method') coinTosses = [];
+        if (currentScene === 'method') resetCoinUI();
         goTo(target);
       });
     });
@@ -288,12 +309,15 @@ const App = (() => {
 
   // === 擲幣互動 ===
   function tossOnce() {
-    if (coinTosses.length >= 6) return;
+    if (coinTosses.length >= 6 || isTossAnimating) return;
+    isTossAnimating = true;
+    setTossButtonState(true);
+
     const toss = Divination.tossCoin();
     const coinEls = document.querySelectorAll('.coin');
     coinEls.forEach((el, i) => {
       el.classList.add('flipping');
-      setTimeout(() => {
+      scheduleTossTask(() => {
         el.textContent = toss.coins[i] === 3 ? '字' : '花';
         el.classList.remove('flipping');
       }, 600);
@@ -304,7 +328,7 @@ const App = (() => {
     if (prog) prog.textContent = `第 ${coinTosses.length} / 6 爻`;
 
     // 顯示已擲出的爻
-    setTimeout(() => {
+    scheduleTossTask(() => {
       const display = document.getElementById('coin-yao-display');
       if (display) {
         const isYang = (toss.value === 7 || toss.value === 9);
@@ -320,21 +344,30 @@ const App = (() => {
       }
 
       if (coinTosses.length >= 6) {
-        setTimeout(() => {
+        scheduleTossTask(() => {
           reading = Divination.fromCoins(coinTosses);
           showAnimation();
         }, 800);
+      } else {
+        isTossAnimating = false;
+        setTossButtonState(false);
       }
     }, 700);
   }
 
   function resetCoinUI() {
+    clearPendingTossTasks();
     coinTosses = [];
+    isTossAnimating = false;
+    setTossButtonState(false);
     const prog = document.getElementById('coin-progress');
     if (prog) prog.textContent = '第 0 / 6 爻';
     const display = document.getElementById('coin-yao-display');
     if (display) display.innerHTML = '';
-    document.querySelectorAll('.coin').forEach(el => el.textContent = '？');
+    document.querySelectorAll('.coin').forEach(el => {
+      el.textContent = '？';
+      el.classList.remove('flipping');
+    });
   }
 
   // === 演算動畫 ===
@@ -473,7 +506,10 @@ const App = (() => {
   // === 意見回饋 ===
   function openFeedback() {
     feedbackRating = 0;
-    document.querySelectorAll('.star').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.star').forEach(s => {
+      s.classList.remove('active');
+      s.setAttribute('aria-pressed', 'false');
+    });
     document.getElementById('feedback-text').value = '';
     document.getElementById('feedback-modal').classList.add('show');
   }
@@ -482,14 +518,32 @@ const App = (() => {
     document.querySelectorAll('.star').forEach(star => {
       star.addEventListener('click', () => {
         feedbackRating = parseInt(star.dataset.v);
-        document.querySelectorAll('.star').forEach(s =>
-          s.classList.toggle('active', parseInt(s.dataset.v) <= feedbackRating));
+        document.querySelectorAll('.star').forEach(s => {
+          const active = parseInt(s.dataset.v) <= feedbackRating;
+          s.classList.toggle('active', active);
+          s.setAttribute('aria-pressed', active ? 'true' : 'false');
+        });
       });
+    });
+    document.getElementById('feedback-modal')?.addEventListener('click', event => {
+      if (event.target === event.currentTarget) {
+        event.currentTarget.classList.remove('show');
+      }
+    });
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape') {
+        document.getElementById('feedback-modal')?.classList.remove('show');
+      }
     });
     document.getElementById('btn-feedback-cancel')?.addEventListener('click', () =>
       document.getElementById('feedback-modal').classList.remove('show'));
     document.getElementById('btn-feedback-submit')?.addEventListener('click', () => {
-      Analytics.trackFeedback(feedbackRating);
+      const feedbackText = document.getElementById('feedback-text').value.trim();
+      if (!feedbackRating && !feedbackText) {
+        showToast('選個星等，或留一句話再送出也可以。');
+        return;
+      }
+      Analytics.trackFeedback(feedbackRating, feedbackText);
       document.getElementById('feedback-modal').classList.remove('show');
       showToast('感謝你的回饋 🙏');
     });

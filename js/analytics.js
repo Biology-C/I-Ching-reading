@@ -27,7 +27,8 @@ const Analytics = (() => {
       share_image:     { love:0, study:0, career:0, wealth:0, yesno:0 },
       methods:         { instant:0, number:0, coin:0 },
       likes:           0,
-      feedbacks:       0
+      feedbacks:       0,
+      feedback_entries: []
     };
   }
   function getLocal() {
@@ -86,11 +87,25 @@ const Analytics = (() => {
   }
 
   /** 記錄意見回饋送出 */
-  function trackFeedback(rating) {
+  function trackFeedback(rating, text = '') {
     const local = getLocal();
+    const trimmedText = text.trim().slice(0, 500);
     local.feedbacks = (local.feedbacks || 0) + 1;
+    if (trimmedText) {
+      const entries = Array.isArray(local.feedback_entries) ? local.feedback_entries : [];
+      entries.push({
+        rating: rating || 0,
+        text: trimmedText,
+        created_at: new Date().toISOString()
+      });
+      local.feedback_entries = entries.slice(-20);
+    }
     saveLocal(local);
-    send('feedback', { rating });
+    send('feedback', {
+      rating,
+      has_text: !!trimmedText,
+      text_length: trimmedText.length
+    });
   }
 
   /** 取得本機統計（在 console 輸入 Analytics.getStats() 查看） */
