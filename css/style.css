@@ -76,12 +76,12 @@ body{font-family:'GenJyuu','Noto Sans TC',sans-serif;color:var(--text-primary);b
 .scene--result.active{position:relative}
 
 /* 場景1：首頁 */
-.home-enter-btn{background:none;border:0;padding:0;color:inherit;font:inherit;text-align:center;cursor:pointer}
+.home-enter-btn{display:inline-flex;flex-direction:column;align-items:center;background:none;border:0;padding:1.5rem 1rem 2rem;color:inherit;font:inherit;text-align:center;cursor:pointer;border-radius:var(--radius-lg)}
 .home-title{font-family:var(--font-display);font-size:clamp(5rem,15vw,12rem);font-weight:400;color:var(--gold-primary);text-shadow:0 0 40px var(--gold-glow),0 0 80px rgba(212,175,55,0.15);animation:breathe 4s ease-in-out infinite;cursor:pointer;user-select:none}
 @keyframes breathe{0%,100%{transform:scale(1);text-shadow:0 0 40px var(--gold-glow)}50%{transform:scale(1.03);text-shadow:0 0 60px var(--gold-glow),0 0 120px rgba(212,175,55,0.25)}}
 .home-title,.home-subtitle{display:block}
 .home-subtitle{font-family:var(--font-display);font-size:clamp(1rem,2.5vw,1.4rem);color:var(--text-secondary);margin-top:2.5rem;letter-spacing:.3em;animation:fadeInUp 1.5s var(--ease-smooth) .5s both}
-.home-hint{font-size:.85rem;color:var(--text-dim);margin-top:4rem;animation:pulse 2.5s ease-in-out infinite,fadeInUp 1.5s var(--ease-smooth) 1s both}
+.home-hint{display:block;font-size:.85rem;color:var(--text-dim);margin-top:4rem;animation:pulse 2.5s ease-in-out infinite,fadeInUp 1.5s var(--ease-smooth) 1s both}
 @keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
 @keyframes pulse{0%,100%{opacity:.35}50%{opacity:.7}}
 
