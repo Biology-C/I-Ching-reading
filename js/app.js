@@ -16,27 +16,27 @@ const App = (() => {
   const directionMeta = {
     love: {
       label: '感情',
-      icon: '❤️',
+      icon: 'heart',
       prompt: '把問題放進感情、關係或人際裡，靜下來想清楚你真正想問的是什麼。'
     },
     study: {
       label: '學業',
-      icon: '📚',
+      icon: 'book',
       prompt: '適合問考試、學習、進修與選擇，先想好你最在意的結果。'
     },
     career: {
       label: '工作',
-      icon: '💼',
+      icon: 'briefcase',
       prompt: '適合問工作、職涯、合作與決策，問題越具體，卦意越好讀。'
     },
     wealth: {
       label: '財運',
-      icon: '💰',
+      icon: 'coins',
       prompt: '適合問收入、投資、金錢安排，先把你想判斷的那一件事放在心裡。'
     },
     yesno: {
       label: '是／否',
-      icon: '☯️',
+      icon: 'scales',
       prompt: '適合問生活小事：要不要做、該不該聯絡、今天行不行。問題越簡單，答案越清楚。'
     }
   };
@@ -86,6 +86,23 @@ const App = (() => {
 
   function getDirectionMeta(direction) {
     return directionMeta[direction] || directionMeta.love;
+  }
+
+  function renderSpriteIcon(iconName, className = '') {
+    const classes = ['ui-icon', className].filter(Boolean).join(' ');
+    return `<svg class="${classes}" aria-hidden="true" focusable="false"><use href="#icon-${iconName}"></use></svg>`;
+  }
+
+  function renderDirectionChip(direction, extraClass = '') {
+    const className = ['direction-chip', extraClass].filter(Boolean).join(' ');
+    return `<span class="${className}" data-direction="${escapeHtml(directionKey(direction))}">
+      <span class="direction-chip__icon">${renderSpriteIcon(direction.icon)}</span>
+      <span class="direction-chip__text">所問方向：${escapeHtml(direction.label)}</span>
+    </span>`;
+  }
+
+  function directionKey(direction) {
+    return Object.keys(directionMeta).find(key => directionMeta[key] === direction) || 'love';
   }
 
   function updateMethodContext() {
@@ -488,8 +505,8 @@ const App = (() => {
                   text-shadow:0 0 40px rgba(242,201,76,0.5);margin-bottom:16px">${sym}</div>
       <div style="font-size:36px;color:#f2c94c;letter-spacing:.15em;margin-bottom:6px">${h.n}卦</div>
       <div style="font-size:18px;color:rgba(255,255,255,0.7);letter-spacing:.2em;margin-bottom:24px">${h.fn}</div>
-      <div style="font-size:13px;color:rgba(255,255,255,0.45);letter-spacing:.14em;margin-bottom:${quick ? '14px' : '24px'}">
-        所問方向：${direction.icon} ${direction.label}
+      <div style="display:flex;justify-content:center;margin-bottom:${quick ? '14px' : '24px'}">
+        ${renderDirectionChip(direction)}
       </div>
       ${quick ? `<div style="margin-bottom:22px">
         <div style="font-size:13px;color:rgba(255,255,255,0.45);letter-spacing:.14em;margin-bottom:8px">生活小事・快速判斷</div>
@@ -635,9 +652,7 @@ const App = (() => {
 
     // ── 方向標記 ──
     html += `<div style="text-align:center;margin-bottom:2rem">
-      <span style="font-size:0.85rem;color:var(--text-dim);letter-spacing:0.1em">
-        ${direction.icon} 所問方向：${direction.label}
-      </span>
+      ${renderDirectionChip(direction)}
     </div>`;
 
     html += renderDailyWisdomCard(selectedDirection || 'general', 'daily-wisdom-card--result');
@@ -744,11 +759,11 @@ const App = (() => {
     </div>
     <div class="result-footer-btns">
       <button class="btn-icon" id="btn-like" title="喜歡這一卦">
-        <span class="icon-heart">♡</span>
+        <span class="icon-heart">${renderSpriteIcon('heart')}</span>
         <span class="icon-label">喜歡</span>
       </button>
       <button class="btn-icon" id="btn-feedback" title="意見回饋">
-        <span class="icon-msg">✉</span>
+        <span class="icon-msg">${renderSpriteIcon('message')}</span>
         <span class="icon-label">回饋</span>
       </button>
     </div>`;
@@ -771,11 +786,10 @@ const App = (() => {
     // 愛心
     document.getElementById('btn-like')?.addEventListener('click', () => {
       const btn = document.getElementById('btn-like');
-      btn.querySelector('.icon-heart').textContent = '♥';
       btn.classList.add('liked');
       btn.disabled = true;
       Analytics.trackLike(selectedDirection);
-      showToast('已記下你的喜歡 ♥');
+      showToast('已記下你的喜歡');
     });
 
     // 意見回饋

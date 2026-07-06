@@ -63,6 +63,9 @@
 html{font-size:18.4px;scroll-behavior:smooth}
 body{font-family:'GenJyuu','Noto Sans TC',sans-serif;color:var(--text-primary);background:var(--bg-primary);min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased;line-height:1.65}
 
+.icon-defs{position:absolute;width:0;height:0;overflow:hidden;pointer-events:none}
+.ui-icon{width:1em;height:1em;display:block;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
+
 #particle-canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none}
 .app-background{position:fixed;top:0;left:0;width:100%;height:100%;background:radial-gradient(ellipse at 50% 0%,var(--bg-secondary) 0%,var(--bg-primary) 70%);z-index:-1}
 
@@ -93,7 +96,14 @@ body{font-family:'GenJyuu','Noto Sans TC',sans-serif;color:var(--text-primary);b
 .direction-card[data-direction="career"]{--glow-color:var(--career-glow)}
 .direction-card[data-direction="wealth"]{--glow-color:var(--wealth-glow)}
 .direction-card[data-direction="yesno"]{--glow-color:var(--yesno-glow)}
-.direction-icon{font-size:2.8rem;margin-bottom:1rem;display:block}
+.direction-card[data-direction="love"] .direction-icon{color:var(--love-color);background:radial-gradient(circle at 50% 35%,rgba(232,93,117,0.12),rgba(232,93,117,0.04));border-color:rgba(232,93,117,0.28)}
+.direction-card[data-direction="study"] .direction-icon{color:var(--study-color);background:radial-gradient(circle at 50% 35%,rgba(93,164,232,0.12),rgba(93,164,232,0.04));border-color:rgba(93,164,232,0.28)}
+.direction-card[data-direction="career"] .direction-icon{color:var(--career-color);background:radial-gradient(circle at 50% 35%,rgba(93,232,160,0.12),rgba(93,232,160,0.04));border-color:rgba(93,232,160,0.28)}
+.direction-card[data-direction="wealth"] .direction-icon{color:var(--wealth-color);background:radial-gradient(circle at 50% 35%,rgba(232,200,93,0.12),rgba(232,200,93,0.04));border-color:rgba(232,200,93,0.28)}
+.direction-card[data-direction="yesno"] .direction-icon{color:var(--yesno-color);background:radial-gradient(circle at 50% 35%,rgba(138,215,255,0.12),rgba(138,215,255,0.04));border-color:rgba(138,215,255,0.28)}
+.direction-icon{width:4rem;height:4rem;margin:0 auto 1rem;display:grid;place-items:center;border:1px solid rgba(255,255,255,0.16);border-radius:50%;box-shadow:inset 0 1px 0 rgba(255,255,255,0.08),0 10px 24px rgba(0,0,0,0.22);transition:transform .3s var(--ease-smooth),box-shadow .3s var(--ease-smooth),border-color .3s var(--ease-smooth)}
+.direction-icon .ui-icon{width:1.75rem;height:1.75rem}
+.direction-card:hover .direction-icon,.direction-card:focus-visible .direction-icon{transform:translateY(-2px) scale(1.04);box-shadow:inset 0 1px 0 rgba(255,255,255,0.08),0 0 24px var(--glow-color,var(--gold-glow))}
 .direction-label,.direction-desc{display:block}
 .direction-label{font-family:var(--font-serif);font-size:1.3rem;color:var(--text-primary);letter-spacing:.1em}
 .direction-desc{font-size:.8rem;color:var(--text-secondary);margin-top:.5rem}

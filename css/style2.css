@@ -2,7 +2,9 @@
 .method-title{font-family:var(--font-serif);font-size:clamp(1.3rem,3.5vw,1.8rem);color:var(--gold-primary);margin-bottom:1rem;letter-spacing:.1em}
 .method-subtitle{color:var(--text-secondary);font-size:.9rem;margin-bottom:2.5rem}
 .method-tabs{display:flex;gap:.5rem;margin-bottom:2.5rem;background:rgba(255,255,255,0.05);border-radius:var(--radius-sm);padding:4px}
-.method-tab{background:none;border:none;color:var(--text-secondary);font-family:var(--font-sans);font-size:.85rem;padding:.6rem 1.2rem;border-radius:6px;cursor:pointer;transition:all .2s var(--ease-smooth);white-space:nowrap}
+.method-tab{background:none;border:none;color:var(--text-secondary);font-family:var(--font-sans);font-size:.85rem;padding:.6rem 1.2rem;border-radius:6px;cursor:pointer;transition:all .2s var(--ease-smooth);white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;gap:.55rem}
+.method-tab-icon{display:grid;place-items:center;width:1rem;height:1rem;flex-shrink:0}
+.method-tab-icon .ui-icon{width:1rem;height:1rem;stroke-width:2}
 .method-tab:hover{color:var(--text-primary)}
 .method-tab.active{background:var(--gold-primary);color:var(--bg-primary);font-weight:700}
 .method-panel{display:none}.method-panel.active{display:block}
@@ -38,6 +40,9 @@
 
 /* 按鈕 */
 .btn{font-family:var(--font-sans);font-size:.95rem;font-weight:500;padding:.8rem 2rem;border-radius:var(--radius-sm);border:1px solid var(--card-border);background:var(--card-bg);color:var(--text-primary);cursor:pointer;transition:all .2s var(--ease-smooth);backdrop-filter:blur(10px);letter-spacing:.05em}
+.btn-with-icon{display:inline-flex;align-items:center;justify-content:center;gap:.6rem}
+.btn-glyph{display:grid;place-items:center;width:1rem;height:1rem}
+.btn-glyph .ui-icon{width:1rem;height:1rem;stroke-width:2}
 .btn:hover{border-color:var(--gold-primary);box-shadow:0 0 20px var(--gold-glow);transform:translateY(-2px)}
 .btn--primary{background:linear-gradient(135deg,var(--gold-primary),var(--gold-dark));color:var(--bg-primary);border:none;font-weight:700}
 .btn--primary:hover{box-shadow:0 4px 30px var(--gold-glow)}
