@@ -5,6 +5,35 @@
 const YiJournal = (() => {
   const STORAGE_KEY = 'yi_journal_v1';
   const MAX_HISTORY = 120;
+  const USER_RESPONSE_OPTIONS = Object.freeze({
+    reactions: Object.freeze([
+      { key: 'hit', label: '有被說中' },
+      { key: 'partial', label: '只說中一半' },
+      { key: 'knew', label: '好啦，我知道' },
+      { key: 'resist', label: '我偏不要' },
+      { key: 'disagree', label: '這次不聽你的' },
+      { key: 'hold', label: '先放著' }
+    ]),
+    choices: Object.freeze([
+      { key: 'pause', label: '我先不動' },
+      { key: 'observe', label: '我再看看局勢' },
+      { key: 'stay', label: '現在這樣就很好' },
+      { key: 'try', label: '我偏要試一次' },
+      { key: 'choose_self', label: '這次我選自己' },
+      { key: 'seek_support', label: '我去找個人說說' },
+      { key: 'defer', label: '今天拒絕作答' }
+    ]),
+    values: Object.freeze([
+      { key: 'peace', label: '想要平靜' },
+      { key: 'dignity', label: '不想再委屈' },
+      { key: 'relationship', label: '想保住這段關係' },
+      { key: 'freedom', label: '想要自由' },
+      { key: 'growth', label: '想再成長一點' },
+      { key: 'stability', label: '需要穩定' },
+      { key: 'breathing_room', label: '只想喘口氣' },
+      { key: 'unknown', label: '還不知道啦' }
+    ])
+  });
 
   function dateKey(date = new Date()) {
     const year = date.getFullYear();
@@ -14,7 +43,7 @@ const YiJournal = (() => {
   }
 
   function emptyData() {
-    return { version: 2, history: [], unlocked: {}, wisdomUnlocked: {} };
+    return { version: 3, history: [], unlocked: {}, wisdomUnlocked: {} };
   }
 
   function getData() {
@@ -22,7 +51,7 @@ const YiJournal = (() => {
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
       if (!saved || !Array.isArray(saved.history)) return emptyData();
       return {
-        version: 2,
+        version: 3,
         history: saved.history,
         unlocked: saved.unlocked && typeof saved.unlocked === 'object' ? saved.unlocked : {},
         wisdomUnlocked: saved.wisdomUnlocked && typeof saved.wisdomUnlocked === 'object'
@@ -82,6 +111,7 @@ const YiJournal = (() => {
       } : null,
       isDailyFirst,
       reflection: '',
+      userResponse: null,
       favorite: false,
       echo: null
     };
@@ -149,6 +179,46 @@ const YiJournal = (() => {
     }));
   }
 
+  function getResponseOptions() {
+    return {
+      reactions: USER_RESPONSE_OPTIONS.reactions.map(item => ({ ...item })),
+      choices: USER_RESPONSE_OPTIONS.choices.map(item => ({ ...item })),
+      values: USER_RESPONSE_OPTIONS.values.map(item => ({ ...item }))
+    };
+  }
+
+  function findResponseOption(type, key) {
+    return USER_RESPONSE_OPTIONS[type]?.find(item => item.key === key) || null;
+  }
+
+  function saveUserResponse(id, payload = {}) {
+    return updateEntry(id, entry => {
+      const current = entry.userResponse || {};
+      const reaction = Object.prototype.hasOwnProperty.call(payload, 'reactionKey')
+        ? findResponseOption('reactions', payload.reactionKey)
+        : current.reaction || null;
+      const choice = Object.prototype.hasOwnProperty.call(payload, 'choiceKey')
+        ? findResponseOption('choices', payload.choiceKey)
+        : current.choice || null;
+      const values = Object.prototype.hasOwnProperty.call(payload, 'valueKeys')
+        ? [...new Set(Array.isArray(payload.valueKeys) ? payload.valueKeys : [])]
+          .map(key => findResponseOption('values', key))
+          .filter(Boolean)
+          .slice(0, 2)
+        : Array.isArray(current.values) ? current.values.slice(0, 2) : [];
+
+      return {
+        ...entry,
+        userResponse: {
+          reaction: reaction ? { ...reaction } : null,
+          choice: choice ? { ...choice } : null,
+          values: values.map(item => ({ ...item })),
+          updatedAt: new Date().toISOString()
+        }
+      };
+    });
+  }
+
   function toggleFavorite(id) {
     return updateEntry(id, entry => ({ ...entry, favorite: !entry.favorite }));
   }
@@ -158,7 +228,12 @@ const YiJournal = (() => {
       pause: '我停了一下',
       courage: '我勇敢試了',
       stay: '維持現狀也很好',
-      pending: '我還在觀察'
+      pending: '我還在觀察',
+      done: '我做了',
+      partial: '我做了一部分',
+      changed: '我改變主意了',
+      not_yet: '我還沒做',
+      no_need: '已經不需要了'
     };
     if (!labels[choice]) return null;
     return updateEntry(id, entry => ({
@@ -190,6 +265,49 @@ const YiJournal = (() => {
     return { ...getData().wisdomUnlocked };
   }
 
+  function recentDateKeys(count = 7) {
+    const anchor = new Date();
+    anchor.setHours(12, 0, 0, 0);
+    return Array.from({ length: count }, (_, index) => {
+      const date = new Date(anchor);
+      date.setDate(anchor.getDate() - (count - index - 1));
+      return dateKey(date);
+    });
+  }
+
+  function mostFrequent(items) {
+    const counts = new Map();
+    items.filter(Boolean).forEach(item => {
+      const current = counts.get(item.key) || { ...item, count: 0 };
+      current.count += 1;
+      counts.set(item.key, current);
+    });
+    return [...counts.values()].sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+  }
+
+  function getSevenDayReview() {
+    const keys = recentDateKeys(7);
+    const dailyEntries = getData().history.filter(item => item.isDailyFirst);
+    const entriesByDate = new Map(dailyEntries.map(item => [item.dateKey, item]));
+    const days = keys.map(key => ({ dateKey: key, entry: entriesByDate.get(key) || null }));
+    const entries = days.map(day => day.entry).filter(Boolean);
+    const choices = mostFrequent(entries.map(entry => entry.userResponse?.choice));
+    const values = mostFrequent(entries.flatMap(entry => (
+      Array.isArray(entry.userResponse?.values) ? entry.userResponse.values : []
+    )));
+
+    return {
+      days,
+      completedDays: entries.length,
+      responseDays: entries.filter(entry => entry.userResponse?.choice).length,
+      echoDays: entries.filter(entry => entry.echo).length,
+      choices,
+      values,
+      topChoice: choices[0] || null,
+      topValues: values.slice(0, 2)
+    };
+  }
+
   function getSummary() {
     const data = getData();
     const today = dateKey();
@@ -213,11 +331,14 @@ const YiJournal = (() => {
     list,
     getToday,
     saveReflection,
+    getResponseOptions,
+    saveUserResponse,
     toggleFavorite,
     saveEcho,
     getAtlas,
     getWisdomIndexes,
     getWisdomCollection,
+    getSevenDayReview,
     getSummary
   };
 })();

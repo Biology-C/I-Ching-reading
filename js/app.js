@@ -282,7 +282,43 @@ const App = (() => {
     return cues[verdict];
   }
 
-  function renderDecisionCompanion(cue, journalEntry) {
+  const companionAsides = Object.freeze({
+    courage: Object.freeze([
+      '那當然！',
+      '相信你自己。',
+      '你心裡其實有數。',
+      '可以任性一次，但記得帶腦。',
+      '先別問第三次，你已經在等喜歡的答案。'
+    ]),
+    pause: Object.freeze([
+      '先吃點東西，空腹不宜決定人生。',
+      '今天拒絕作答，也是一種回答。',
+      '先去洗個澡，熱水有時比答案可靠。',
+      '答案可能在你放下手機之後。',
+      '去問你媽媽，或那個最敢對你說實話的人。'
+    ]),
+    stay: Object.freeze([
+      '宇宙還在輸入中。',
+      '今天這題，明天的你比較會。',
+      '這件事值得一杯飲料後再議。',
+      '問問你的貓，如果牠願意。',
+      '沒有大動作，也不代表沒有在前進。'
+    ])
+  });
+
+  function getCompanionAside(readingData, cue) {
+    const pool = companionAsides[cue.key] || companionAsides.stay;
+    const lineSeed = (readingData.lines || []).reduce((sum, line, index) => {
+      return sum + Number(line || 0) * (index + 3);
+    }, 0);
+    const seed = Number(readingData.originalId || 0) * 7
+      + Number(readingData.changedId || 0) * 3
+      + lineSeed
+      + selectedDirection.length;
+    return pool[Math.abs(seed) % pool.length];
+  }
+
+  function renderDecisionCompanion(cue, journalEntry, readingData) {
     const question = journalEntry?.question
       ? `<div class="decision-companion-question">你正在想：${escapeHtml(journalEntry.question)}</div>`
       : '';
@@ -296,8 +332,109 @@ const App = (() => {
       <div class="decision-companion-value">${cue.label}</div>
       <div class="decision-companion-headline">${cue.headline}</div>
       <div class="decision-companion-detail">${cue.detail}</div>
+      <div class="decision-companion-aside"><span>再送你一句</span>${escapeHtml(getCompanionAside(readingData, cue))}</div>
       <div class="decision-companion-note">它不替你決定，只陪你把心裡的方向看清楚。</div>
     </section>`;
+  }
+
+  function renderResponseChips(options, type, selectedKeys) {
+    return options.map(option => {
+      const selected = selectedKeys.has(option.key);
+      return `<button type="button" class="response-chip${selected ? ' selected' : ''}"
+        data-response-type="${type}" data-response-key="${option.key}"
+        aria-pressed="${selected ? 'true' : 'false'}">${escapeHtml(option.label)}</button>`;
+    }).join('');
+  }
+
+  function renderUserResponseCard(journalEntry) {
+    if (!journalEntry || typeof YiJournal === 'undefined') return '';
+    const options = YiJournal.getResponseOptions();
+    const response = journalEntry.userResponse || {};
+    const selectedReaction = new Set(response.reaction?.key ? [response.reaction.key] : []);
+    const selectedChoice = new Set(response.choice?.key ? [response.choice.key] : []);
+    const selectedValues = new Set((response.values || []).map(item => item.key));
+    const hasResponse = selectedReaction.size || selectedChoice.size || selectedValues.size;
+
+    return `<section class="decision-response" id="decision-user-response">
+      <div class="decision-response-eyebrow">卦象說完了，換你</div>
+      <h2>不管卦象怎麼說，你怎麼回應？</h2>
+      <div class="response-group">
+        <div class="response-group-title">這個提醒，和你現在的感受</div>
+        <div class="response-chip-list" role="group" aria-label="我對卦象的反應">
+          ${renderResponseChips(options.reactions, 'reaction', selectedReaction)}
+        </div>
+      </div>
+      <div class="response-group">
+        <div class="response-group-title">所以，此刻的你決定</div>
+        <div class="response-chip-list" role="group" aria-label="我此刻的選擇">
+          ${renderResponseChips(options.choices, 'choice', selectedChoice)}
+        </div>
+      </div>
+      <div class="response-group">
+        <div class="response-group-title">這個選擇，現在最想保護什麼？<small>最多兩個</small></div>
+        <div class="response-chip-list response-chip-list--values" role="group" aria-label="我想保護的價值">
+          ${renderResponseChips(options.values, 'value', selectedValues)}
+        </div>
+      </div>
+      <div class="decision-response-status" id="decision-response-status" aria-live="polite">
+        ${hasResponse ? '已記下你的回應，可以隨時改變主意。' : '點一下就會留進卦跡；改變主意也沒關係。'}
+      </div>
+    </section>`;
+  }
+
+  function syncUserResponseCard(entry) {
+    const card = document.getElementById('decision-user-response');
+    if (!card) return;
+    const response = entry.userResponse || {};
+    const selected = {
+      reaction: new Set(response.reaction?.key ? [response.reaction.key] : []),
+      choice: new Set(response.choice?.key ? [response.choice.key] : []),
+      value: new Set((response.values || []).map(item => item.key))
+    };
+    card.querySelectorAll('[data-response-type]').forEach(button => {
+      const active = selected[button.dataset.responseType]?.has(button.dataset.responseKey) || false;
+      button.classList.toggle('selected', active);
+      button.setAttribute('aria-pressed', active ? 'true' : 'false');
+    });
+    const status = document.getElementById('decision-response-status');
+    if (status) status.textContent = '已記下你的回應，可以隨時改變主意。';
+  }
+
+  function initUserResponseInteractions() {
+    const card = document.getElementById('decision-user-response');
+    if (!card || !currentJournalId) return;
+    card.addEventListener('click', event => {
+      const button = event.target.closest('[data-response-type]');
+      if (!button) return;
+      const type = button.dataset.responseType;
+      const key = button.dataset.responseKey;
+      const current = YiJournal.getEntry(currentJournalId)?.userResponse || {};
+      let payload;
+
+      if (type === 'reaction') payload = { reactionKey: key };
+      else if (type === 'choice') payload = { choiceKey: key };
+      else {
+        const valueKeys = (current.values || []).map(item => item.key);
+        const selected = valueKeys.includes(key);
+        if (!selected && valueKeys.length >= 2) {
+          showToast('先選最重要的兩個就好');
+          return;
+        }
+        payload = { valueKeys: selected ? valueKeys.filter(item => item !== key) : [...valueKeys, key] };
+      }
+
+      const updated = YiJournal.saveUserResponse(currentJournalId, payload);
+      if (!updated) {
+        showToast('這次沒有保存成功，請再試一次');
+        return;
+      }
+      syncUserResponseCard(updated);
+      Analytics.trackEvent('decision_response_saved', {
+        response_stage: type,
+        value_count: updated.userResponse?.values?.length || 0,
+        has_choice: !!updated.userResponse?.choice
+      });
+    });
   }
 
   function renderReflectionCard(cue, journalEntry) {
@@ -796,6 +933,15 @@ const App = (() => {
     return `${date.getMonth() + 1} 月 ${date.getDate()} 日`;
   }
 
+  function formatReviewDay(dateKey) {
+    const date = new Date(`${dateKey}T12:00:00`);
+    if (Number.isNaN(date.getTime())) return { weekday: '', day: '' };
+    return {
+      weekday: `週${['日', '一', '二', '三', '四', '五', '六'][date.getDay()]}`,
+      day: date.getDate()
+    };
+  }
+
   function renderHomeJournalStatus() {
     const container = document.getElementById('home-daily-status');
     if (!container || typeof YiJournal === 'undefined') return;
@@ -806,7 +952,7 @@ const App = (() => {
       return;
     }
     const hexagram = HEXAGRAMS[summary.today.originalId];
-    const decision = summary.today.decision?.label || '已記下';
+    const decision = summary.today.userResponse?.choice?.label || summary.today.decision?.label || '已記下';
     container.innerHTML = `<span class="home-daily-kicker">今日一卦已記下</span>
       <span class="home-daily-copy">${escapeHtml(hexagram?.fn || `${summary.today.originalId} 卦`)} · ${escapeHtml(decision)}</span>`;
   }
@@ -854,12 +1000,12 @@ const App = (() => {
 
     const today = YiJournal.dateKey();
     const pendingEchoes = entries.filter(entry => entry.isDailyFirst && entry.dateKey < today && !entry.echo);
-    let html = '';
+    let html = renderSevenDayReview();
     if (pendingEchoes.length) {
       html += `<section class="echo-section">
         <div class="journal-section-heading">
           <span>隔日回聲</span>
-          <small>後來，你怎麼選？</small>
+          <small>後來，發生了什麼？</small>
         </div>
         ${pendingEchoes.slice(0, 3).map(renderEchoCard).join('')}
       </section>`;
@@ -875,18 +1021,72 @@ const App = (() => {
     return html;
   }
 
+  function renderSevenDayReview() {
+    const review = YiJournal.getSevenDayReview();
+    const insight = review.topChoice
+      ? `這段時間，你最常對自己說：「${escapeHtml(review.topChoice.label)}」`
+      : '卦象已經留下。下一次，也記下你自己的選擇。';
+    const valueInsight = review.topValues.length
+      ? `<span>你常在保護：${review.topValues.map(item => escapeHtml(item.label)).join('、')} · 已留下 ${review.echoDays} 則隔日回聲</span>`
+      : `<span>價值標籤會慢慢拼出你在意的事 · 已留下 ${review.echoDays} 則隔日回聲</span>`;
+    const dayCells = review.days.map(day => {
+      const label = formatReviewDay(day.dateKey);
+      const hasReading = !!day.entry;
+      const hasResponse = !!day.entry?.userResponse?.choice;
+      const state = hasResponse ? '有自己的選擇' : hasReading ? '有今日一卦' : '沒有紀錄';
+      return `<div class="review-day${hasReading ? ' has-reading' : ''}${hasResponse ? ' has-response' : ''}"
+        aria-label="${label.weekday} ${label.day} 日，${state}">
+        <span>${label.weekday}</span><strong>${label.day}</strong><i></i>
+      </div>`;
+    }).join('');
+    const trail = review.days.filter(day => day.entry).map(day => {
+      const entry = day.entry;
+      const label = formatReviewDay(day.dateKey);
+      const cue = entry.decision?.label || '卦象提醒';
+      const choice = entry.userResponse?.choice?.label || '還沒留下自己的選擇';
+      const echo = entry.echo?.label
+        ? `<small>後來：${escapeHtml(entry.echo.label)}</small>`
+        : '';
+      return `<div class="review-trail-row">
+        <span>${label.weekday}</span>
+        <em>${escapeHtml(cue)}</em>
+        <i>→</i>
+        <strong class="${entry.userResponse?.choice ? '' : 'is-pending'}">${escapeHtml(choice)}</strong>
+        ${echo}
+      </div>`;
+    }).join('');
+
+    return `<section class="seven-day-review">
+      <div class="seven-day-review-head">
+        <div>
+          <span>最近 7 日</span>
+          <h2>正在拼回自己的方向</h2>
+        </div>
+        <div class="seven-day-score"><strong>${review.responseDays}<small>/7</small></strong><span>天留下選擇</span></div>
+      </div>
+      <div class="review-days">${dayCells}</div>
+      <div class="review-insight"><strong>${insight}</strong>${valueInsight}</div>
+      ${trail ? `<div class="review-trail">${trail}</div>` : ''}
+      <div class="review-footnote">沒有連續也沒關係。這裡記的是你走過，不是你打卡。</div>
+    </section>`;
+  }
+
   function renderEchoCard(entry) {
     const hexagram = HEXAGRAMS[entry.originalId];
     const subject = entry.question || hexagram?.fn || `第 ${entry.originalId} 卦`;
+    const personalChoice = entry.userResponse?.choice?.label;
     return `<article class="echo-card">
       <div class="echo-card-date">${formatJournalDate(entry.createdAt)} · ${escapeHtml(entry.decision?.label || '那一次的選擇')}</div>
       <div class="echo-card-question">${escapeHtml(subject)}</div>
-      <div class="echo-card-prompt">回頭看，你最後比較接近哪一種選擇？</div>
+      <div class="echo-card-prompt">${personalChoice
+        ? `昨天你選擇「${escapeHtml(personalChoice)}」。後來呢？`
+        : '回頭看，後來發生了什麼？'}</div>
       <div class="echo-actions">
-        <button type="button" data-journal-action="echo" data-entry-id="${entry.id}" data-choice="pause">停了一下</button>
-        <button type="button" data-journal-action="echo" data-entry-id="${entry.id}" data-choice="courage">勇敢試了</button>
-        <button type="button" data-journal-action="echo" data-entry-id="${entry.id}" data-choice="stay">維持現狀</button>
-        <button type="button" data-journal-action="echo" data-entry-id="${entry.id}" data-choice="pending">還在觀察</button>
+        <button type="button" data-journal-action="echo" data-entry-id="${entry.id}" data-choice="done">我做了</button>
+        <button type="button" data-journal-action="echo" data-entry-id="${entry.id}" data-choice="partial">做了一部分</button>
+        <button type="button" data-journal-action="echo" data-entry-id="${entry.id}" data-choice="changed">我改變主意</button>
+        <button type="button" data-journal-action="echo" data-entry-id="${entry.id}" data-choice="not_yet">還沒做</button>
+        <button type="button" data-journal-action="echo" data-entry-id="${entry.id}" data-choice="no_need">已經不需要了</button>
       </div>
     </article>`;
   }
@@ -903,13 +1103,21 @@ const App = (() => {
     const echo = entry.echo
       ? `<div class="history-card-echo">後來：${escapeHtml(entry.echo.label)}</div>`
       : '';
+    const response = entry.userResponse;
+    const personal = response?.reaction || response?.choice || response?.values?.length
+      ? `<div class="history-card-response">
+          ${response.reaction ? `<span>我的反應：${escapeHtml(response.reaction.label)}</span>` : ''}
+          ${response.choice ? `<strong>我的選擇：${escapeHtml(response.choice.label)}</strong>` : ''}
+          ${response.values?.length ? `<small>想保護：${response.values.map(item => escapeHtml(item.label)).join('、')}</small>` : ''}
+        </div>`
+      : '';
     return `<article class="history-card">
       <div class="history-card-symbol">${hexSymbol(entry.originalId)}</div>
       <div class="history-card-body">
         <div class="history-card-meta">${formatJournalDate(entry.createdAt)} · ${escapeHtml(direction.label)}${entry.isDailyFirst ? ' · 當日第一卦' : ''}</div>
         <div class="history-card-title">${escapeHtml(hexagram?.fn || `第 ${entry.originalId} 卦`)}</div>
         <div class="history-card-cue">${escapeHtml(entry.decision?.label || '決策陪伴')}</div>
-        ${question}${reflection}${echo}
+        ${question}${personal}${reflection}${echo}
       </div>
       <div class="history-card-side">
         ${entry.favorite ? `<span class="history-favorite" aria-label="已收藏">${renderSpriteIcon('heart')}</span>` : ''}
@@ -1167,7 +1375,7 @@ const App = (() => {
       : '本次僅供參考';
     html += renderDailyWisdomCard(resultWisdom, 'daily-wisdom-card--result', wisdomCollectionNote);
 
-    html += renderDecisionCompanion(decisionCue, journalEntry);
+    html += renderDecisionCompanion(decisionCue, journalEntry, r);
 
     if (selectedDirection === 'yesno') {
       html += renderYesNoCard(r);
@@ -1262,6 +1470,7 @@ const App = (() => {
       </div>
     </div>`;
 
+    html += renderUserResponseCard(journalEntry);
     html += renderReflectionCard(decisionCue, journalEntry);
 
     // 底部操作
@@ -1283,6 +1492,7 @@ const App = (() => {
     </div>`;
 
     container.innerHTML = html;
+    initUserResponseInteractions();
 
     // 再問一卦
     document.getElementById('btn-restart')?.addEventListener('click', () => {
