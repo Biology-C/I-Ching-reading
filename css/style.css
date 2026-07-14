@@ -154,10 +154,11 @@ html[data-theme="light"] .theme-toggle__icon--moon{display:grid}
 @keyframes pulse{0%,100%{opacity:.35}50%{opacity:.7}}
 
 /* 場景2：選擇方向 */
-.direction-title{font-family:var(--font-serif);font-size:clamp(1.5rem,4vw,2.2rem);color:var(--gold-primary);margin-bottom:2.5rem;letter-spacing:.15em}
-.direction-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1.5rem;max-width:500px;width:100%}
-.direction-card{appearance:none;width:100%;background:var(--card-bg);border:1px solid var(--card-border);border-radius:var(--radius-md);padding:2.5rem 1.5rem;text-align:center;cursor:pointer;transition:all .4s var(--ease-smooth);backdrop-filter:blur(10px);position:relative;overflow:hidden;color:inherit;font:inherit}
-.direction-card--wide{grid-column:1/-1}
+#scene-direction{height:100%;height:100dvh;justify-content:flex-start;padding-top:max(5rem,calc(env(safe-area-inset-top) + 4rem));padding-bottom:max(2rem,calc(env(safe-area-inset-bottom) + 1rem));overscroll-behavior-y:contain}
+.direction-title{flex-shrink:0;font-family:var(--font-serif);font-size:clamp(1.5rem,4vw,2.2rem);color:var(--gold-primary);margin-top:auto;margin-bottom:1.5rem;letter-spacing:.15em}
+.direction-grid{flex-shrink:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem;max-width:560px;width:100%;margin-bottom:auto}
+.direction-card{appearance:none;width:100%;min-height:10rem;background:var(--card-bg);border:1px solid var(--card-border);border-radius:var(--radius-md);padding:1.5rem 1.25rem;text-align:center;cursor:pointer;transition:all .4s var(--ease-smooth);backdrop-filter:blur(10px);position:relative;overflow:hidden;color:inherit;font:inherit}
+.direction-card--wide{grid-column:1/-1;min-height:9.5rem}
 .direction-card:hover,.direction-card:focus-visible{border-color:rgba(212,175,55,0.6);transform:translateY(-6px);box-shadow:0 12px 40px rgba(0,0,0,0.4),0 0 30px var(--glow-color,var(--gold-glow))}
 .direction-card[data-direction="love"]{--glow-color:var(--love-glow)}
 .direction-card[data-direction="study"]{--glow-color:var(--study-glow)}
@@ -169,12 +170,12 @@ html[data-theme="light"] .theme-toggle__icon--moon{display:grid}
 .direction-card[data-direction="career"] .direction-icon{color:var(--career-color);background:radial-gradient(circle at 50% 35%,rgba(93,232,160,0.12),rgba(93,232,160,0.04));border-color:rgba(93,232,160,0.28)}
 .direction-card[data-direction="wealth"] .direction-icon{color:var(--wealth-color);background:radial-gradient(circle at 50% 35%,rgba(232,200,93,0.12),rgba(232,200,93,0.04));border-color:rgba(232,200,93,0.28)}
 .direction-card[data-direction="yesno"] .direction-icon{color:var(--yesno-color);background:radial-gradient(circle at 50% 35%,rgba(138,215,255,0.12),rgba(138,215,255,0.04));border-color:rgba(138,215,255,0.28)}
-.direction-icon{width:4rem;height:4rem;margin:0 auto 1rem;display:grid;place-items:center;border:1px solid rgba(255,255,255,0.16);border-radius:50%;box-shadow:inset 0 1px 0 rgba(255,255,255,0.08),0 10px 24px rgba(0,0,0,0.22);transition:transform .3s var(--ease-smooth),box-shadow .3s var(--ease-smooth),border-color .3s var(--ease-smooth)}
-.direction-icon .ui-icon{width:1.75rem;height:1.75rem}
+.direction-icon{width:3.25rem;height:3.25rem;margin:0 auto .7rem;display:grid;place-items:center;border:1px solid rgba(255,255,255,0.16);border-radius:50%;box-shadow:inset 0 1px 0 rgba(255,255,255,0.08),0 10px 24px rgba(0,0,0,0.22);transition:transform .3s var(--ease-smooth),box-shadow .3s var(--ease-smooth),border-color .3s var(--ease-smooth)}
+.direction-icon .ui-icon{width:1.45rem;height:1.45rem}
 .direction-card:hover .direction-icon,.direction-card:focus-visible .direction-icon{transform:translateY(-2px) scale(1.04);box-shadow:inset 0 1px 0 rgba(255,255,255,0.08),0 0 24px var(--glow-color,var(--gold-glow))}
 .direction-label,.direction-desc{display:block}
-.direction-label{font-family:var(--font-serif);font-size:1.3rem;color:var(--text-primary);letter-spacing:.1em}
-.direction-desc{font-size:.8rem;color:var(--text-secondary);margin-top:.5rem}
+.direction-label{font-family:var(--font-serif);font-size:1.15rem;color:var(--text-primary);letter-spacing:.1em}
+.direction-desc{font-size:.75rem;color:var(--text-secondary);margin-top:.35rem;line-height:1.5}
 
 .home-enter-btn:focus-visible,
 .direction-card:focus-visible,
