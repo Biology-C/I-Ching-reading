@@ -15,6 +15,23 @@ const App = (() => {
   let currentResultSource = 'new';
   let journalTab = 'history';
 
+  const THEME_STORAGE_KEY = 'yi_theme';
+  const particlePalettes = Object.freeze({
+    dark: Object.freeze([
+      [242, 201, 76],
+      [138, 215, 255],
+      [232, 93, 117],
+      [93, 232, 160]
+    ]),
+    light: Object.freeze([
+      [124, 86, 24],
+      [38, 112, 137],
+      [169, 67, 84],
+      [45, 123, 88],
+      [78, 72, 139]
+    ])
+  });
+
   const defaultMethodPrompt = '心中默念你的問題，然後選擇一種方式';
   const directionMeta = {
     love: {
@@ -55,7 +72,42 @@ const App = (() => {
     57: 1, 58: 1, 59: 0, 60: 0, 61: 1, 62: 0, 63: 0, 64: 0
   };
 
-  // === 粒子系統 ===
+  // === 主題與粒子系統 ===
+  function getCurrentTheme() {
+    return document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
+  }
+
+  function applyTheme(theme, persist = false) {
+    const nextTheme = theme === 'light' ? 'light' : 'dark';
+    const isLight = nextTheme === 'light';
+    document.documentElement.dataset.theme = nextTheme;
+
+    const toggle = document.getElementById('theme-toggle');
+    if (toggle) {
+      const actionLabel = isLight ? '深色' : '明亮';
+      toggle.setAttribute('aria-label', `切換為${actionLabel}主題`);
+      toggle.setAttribute('aria-pressed', String(isLight));
+      toggle.querySelector('.theme-toggle__label').textContent = actionLabel;
+    }
+
+    const themeColor = document.getElementById('theme-color');
+    themeColor?.setAttribute('content', isLight ? '#e4ece8' : '#06000f');
+
+    if (persist) {
+      try { localStorage.setItem(THEME_STORAGE_KEY, nextTheme); } catch {}
+    }
+    window.dispatchEvent(new CustomEvent('yi:themechange', { detail: { theme: nextTheme } }));
+  }
+
+  function initTheme() {
+    applyTheme(getCurrentTheme());
+    document.getElementById('theme-toggle')?.addEventListener('click', () => {
+      const nextTheme = getCurrentTheme() === 'dark' ? 'light' : 'dark';
+      applyTheme(nextTheme, true);
+      Analytics.trackEvent('theme_change', { theme: nextTheme });
+    });
+  }
+
   function initParticles() {
     const canvas = document.getElementById('particle-canvas');
     if (!canvas) return;
@@ -65,18 +117,24 @@ const App = (() => {
     function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
     resize(); window.addEventListener('resize', resize);
 
+    function randomColor(theme = getCurrentTheme()) {
+      const palette = particlePalettes[theme];
+      return palette[Math.floor(Math.random() * palette.length)];
+    }
+
     for (let i = 0; i < (reduceMotion ? 18 : 50); i++) {
       particles.push({
         x: Math.random()*canvas.width, y: Math.random()*canvas.height,
         vx: (Math.random()-0.5)*0.3, vy: -Math.random()*0.5 - 0.1,
-        r: Math.random()*2+0.5, a: Math.random()*0.5+0.1
+        r: Math.random()*2+0.5, a: Math.random()*0.5+0.1,
+        color: randomColor()
       });
     }
     function draw() {
       ctx.clearRect(0,0,canvas.width,canvas.height);
       particles.forEach(p => {
         ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
-        ctx.fillStyle = `rgba(212,175,55,${p.a})`;
+        ctx.fillStyle = `rgba(${p.color.join(',')},${p.a})`;
         ctx.fill();
         p.x += p.vx; p.y += p.vy;
         if (p.y < -10) { p.y = canvas.height+10; p.x = Math.random()*canvas.width; }
@@ -85,6 +143,10 @@ const App = (() => {
       });
       if (!reduceMotion) requestAnimationFrame(draw);
     }
+    window.addEventListener('yi:themechange', event => {
+      particles.forEach(particle => { particle.color = randomColor(event.detail.theme); });
+      if (reduceMotion) draw();
+    });
     draw();
   }
 
@@ -366,6 +428,7 @@ const App = (() => {
 
   // === 事件綁定 ===
   function init() {
+    initTheme();
     initParticles();
     updateMethodContext();
     const journalSummary = YiJournal.getSummary();
