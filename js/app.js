@@ -13,6 +13,7 @@ const App = (() => {
   let feedbackRating = 0;
   let currentJournalId = null;
   let currentResultSource = 'new';
+  let currentWisdom = null;
   let journalTab = 'history';
 
   const THEME_STORAGE_KEY = 'yi_theme';
@@ -179,9 +180,7 @@ const App = (() => {
       ? getDirectionMeta(selectedDirection).prompt
       : defaultMethodPrompt;
     if (dailyWisdom) {
-      dailyWisdom.innerHTML = selectedDirection
-        ? renderDailyWisdomCard(selectedDirection)
-        : renderDailyWisdomCard('general');
+      dailyWisdom.innerHTML = renderWisdomPreview();
     }
   }
 
@@ -323,19 +322,39 @@ const App = (() => {
       .replaceAll("'", '&#39;');
   }
 
-  function getDailyWisdom(direction) {
+  function getHexagramWisdom(hexagramId, preferUnseen = false) {
     if (typeof DailyWisdom === 'undefined') return null;
-    return DailyWisdom.get(direction || 'general');
+    const seenIndexes = preferUnseen && typeof YiJournal !== 'undefined'
+      ? YiJournal.getWisdomIndexes(hexagramId)
+      : null;
+    return DailyWisdom.get(hexagramId, new Date(), seenIndexes);
   }
 
-  function renderDailyWisdomCard(direction, extraClass = '') {
-    const wisdom = getDailyWisdom(direction);
+  function renderWisdomPreview() {
+    return `<div class="daily-wisdom-card daily-wisdom-card--preview">
+      <div class="daily-wisdom-label">512 則卦象解答</div>
+      <div class="daily-wisdom-text">完成起卦後，會依本卦遇見一則格言、預言故事或名著名言。</div>
+      <div class="daily-wisdom-meta">每日第一卦才會收進解答藏書</div>
+    </div>`;
+  }
+
+  function renderDailyWisdomCard(wisdom, extraClass = '', collectionNote = '') {
     if (!wisdom) return '';
     const className = ['daily-wisdom-card', extraClass].filter(Boolean).join(' ');
-    return `<div class="${className}">
-      <div class="daily-wisdom-label">今日格言・參考一下</div>
-      <div class="daily-wisdom-date">${escapeHtml(wisdom.dateLabel)}</div>
+    const type = wisdom.type || 'legacy';
+    const position = Number.isInteger(wisdom.index)
+      ? `第 ${wisdom.index + 1} / 8 則`
+      : '舊版每日格言';
+    const source = wisdom.source
+      ? `<div class="daily-wisdom-source">${escapeHtml(wisdom.source)}</div>`
+      : '';
+    return `<div class="${className}" data-type="${escapeHtml(type)}">
+      <div class="daily-wisdom-label">${escapeHtml(wisdom.label || '卦象解答')}</div>
+      <div class="daily-wisdom-date">${escapeHtml(wisdom.dateLabel || wisdom.dateKey || '')}</div>
+      ${wisdom.title ? `<div class="daily-wisdom-title">${escapeHtml(wisdom.title)}</div>` : ''}
       <div class="daily-wisdom-text">${escapeHtml(wisdom.text)}</div>
+      ${source}
+      <div class="daily-wisdom-meta">${position} ・ 全庫 512 則${collectionNote ? ` ・ ${escapeHtml(collectionNote)}` : ''}</div>
     </div>`;
   }
 
@@ -367,6 +386,7 @@ const App = (() => {
     reading = null;
     currentJournalId = null;
     currentResultSource = 'new';
+    currentWisdom = null;
     resetCoinUI();
     const question = document.getElementById('decision-question');
     if (question) question.value = '';
@@ -375,7 +395,9 @@ const App = (() => {
 
   function recordCurrentReading() {
     const cue = getDecisionCue(reading);
-    const wisdom = getDailyWisdom(selectedDirection || 'general');
+    const isDailyFirst = !YiJournal.getToday();
+    const wisdom = getHexagramWisdom(reading.originalId, isDailyFirst);
+    currentWisdom = wisdom;
     const result = YiJournal.recordReading({
       reading,
       direction: selectedDirection,
@@ -397,7 +419,10 @@ const App = (() => {
       Analytics.trackEvent('daily_reading_saved', {
         hexagram_id: result.entry.originalId,
         atlas_unlocked: result.unlockedNow,
-        unlocked_count: result.unlockedCount
+        unlocked_count: result.unlockedCount,
+        wisdom_id: result.entry.wisdom?.id || '',
+        wisdom_unlocked: result.wisdomUnlockedNow,
+        wisdom_unlocked_count: result.wisdomUnlockedCount
       });
     }
   }
@@ -641,6 +666,13 @@ const App = (() => {
   }
 
   // === 分享連結 ===
+  function getCurrentWisdom() {
+    const journalWisdom = currentJournalId ? YiJournal.getEntry(currentJournalId)?.wisdom : null;
+    if (journalWisdom?.text) return journalWisdom;
+    if (currentWisdom?.text) return currentWisdom;
+    return getHexagramWisdom(reading?.originalId);
+  }
+
   function shareLink() {
     if (!reading) return;
     const hash = '#r=' + reading.lines.join(',') + '&d=' + (selectedDirection || 'love');
@@ -651,8 +683,12 @@ const App = (() => {
     const direction = getDirectionMeta(selectedDirection || 'love');
     const decision = getDecisionCue(reading);
     const quick = selectedDirection === 'yesno' ? getYesNoAnswer(reading) : null;
+    const wisdom = getCurrentWisdom();
     const quickText = quick ? `\n快速判斷：${quick.label}｜${quick.headline}` : '';
-    const shareText = `【易｜人生決策輔助器】${h.fn}（${h.n}卦）\n所問方向：${direction.label}\n決策陪伴：${decision.label}${quickText}\n${h.j}\n${h.core || ''}\n\n${url}`;
+    const wisdomText = wisdom
+      ? `\n${wisdom.label || '卦象解答'}：${wisdom.text}${wisdom.source ? `——${wisdom.source}` : ''}`
+      : '';
+    const shareText = `【易｜人生決策輔助器】${h.fn}（${h.n}卦）\n所問方向：${direction.label}\n決策陪伴：${decision.label}${quickText}${wisdomText}\n${h.j}\n\n${url}`;
 
     Analytics.trackShare('link', selectedDirection);
 
@@ -676,8 +712,10 @@ const App = (() => {
     const direction = getDirectionMeta(selectedDirection || 'love');
     const decision = getDecisionCue(reading);
     const quick = selectedDirection === 'yesno' ? getYesNoAnswer(reading) : null;
+    const wisdom = getCurrentWisdom();
     const quickColor = quick ? ({ yes: '#70e0aa', no: '#ff8b96', wait: '#8ad7ff' }[quick.answer]) : '';
     const decisionColor = ({ courage: '#78dfad', pause: '#ff9aa5', stay: '#8ad7ff' }[decision.key]);
+    const wisdomColor = wisdom?.type === 'story' ? '#8ad7ff' : wisdom?.type === 'classic' ? '#78dfad' : '#f2c94c';
 
     // 建立離屏卡片
     const card = document.createElement('div');
@@ -707,6 +745,11 @@ const App = (() => {
         <div style="font-size:13px;color:rgba(255,255,255,0.45);letter-spacing:.14em;margin-bottom:8px">生活小事・快速判斷</div>
         <div style="font-size:44px;color:${quickColor};line-height:1.1;letter-spacing:.08em;margin-bottom:8px">${quick.label}</div>
         <div style="font-size:15px;color:rgba(255,255,255,0.72);line-height:1.7">${quick.headline}</div>
+      </div>` : ''}
+      ${wisdom ? `<div style="margin-bottom:22px;padding:18px;border:1px solid ${wisdomColor}55;border-radius:14px;background:${wisdomColor}0d">
+        <div style="font-size:12px;color:${wisdomColor};letter-spacing:.14em;margin-bottom:7px">${escapeHtml(wisdom.label || '卦象解答')}</div>
+        <div style="font-size:18px;color:#fff;line-height:1.8">${escapeHtml(wisdom.text)}</div>
+        ${wisdom.source ? `<div style="font-size:12px;color:${wisdomColor};margin-top:8px">${escapeHtml(wisdom.source)}</div>` : ''}
       </div>` : ''}
       <div style="font-size:15px;color:rgba(255,255,255,0.5);font-style:italic;margin-bottom:32px;
                   border-top:1px solid rgba(242,201,76,0.2);border-bottom:1px solid rgba(242,201,76,0.2);
@@ -784,7 +827,8 @@ const App = (() => {
     summaryContainer.innerHTML = `
       <div class="journal-stat"><strong>${summary.monthDays}</strong><span>本月靜心日</span></div>
       <div class="journal-stat"><strong>${summary.historyCount}</strong><span>決策卦跡</span></div>
-      <div class="journal-stat"><strong>${summary.unlockedCount}<small>/64</small></strong><span>已遇見卦象</span></div>`;
+      <div class="journal-stat"><strong>${summary.unlockedCount}<small>/64</small></strong><span>已遇見卦象</span></div>
+      <div class="journal-stat"><strong>${summary.wisdomUnlockedCount}<small>/512</small></strong><span>解答藏書</span></div>`;
 
     document.querySelectorAll('.journal-tab').forEach(tab => {
       const active = tab.dataset.journalTab === journalTab;
@@ -794,7 +838,9 @@ const App = (() => {
 
     content.innerHTML = journalTab === 'atlas'
       ? renderAtlasContent()
-      : renderHistoryContent();
+      : journalTab === 'wisdom'
+        ? renderWisdomLibrary()
+        : renderHistoryContent();
   }
 
   function renderHistoryContent() {
@@ -898,6 +944,40 @@ const App = (() => {
     </section>`;
   }
 
+  function renderWisdomLibrary() {
+    const collection = YiJournal.getWisdomCollection();
+    const unlockedCount = Object.keys(collection).length;
+    const volumes = Array.from({ length: 64 }, (_, index) => {
+      const hexagramId = index + 1;
+      const hexagram = HEXAGRAMS[hexagramId];
+      const entries = DailyWisdom.getEntries(hexagramId);
+      const unlockedEntries = entries.filter(entry => collection[entry.id]);
+      const entryCards = unlockedEntries.length
+        ? unlockedEntries.map(entry => `<article class="wisdom-entry" data-type="${entry.type}">
+            <div class="wisdom-entry-label">${escapeHtml(entry.label)} ・ 第 ${entry.index + 1} / 8 則</div>
+            <div class="wisdom-entry-title">${escapeHtml(entry.title)}</div>
+            <div class="wisdom-entry-text">${escapeHtml(entry.text)}</div>
+            ${entry.source ? `<div class="wisdom-entry-source">${escapeHtml(entry.source)}</div>` : ''}
+          </article>`).join('')
+        : '<p class="wisdom-volume-empty">尚未從今日第一卦遇見這一冊。</p>';
+      return `<details class="wisdom-volume${unlockedEntries.length ? '' : ' locked'}">
+        <summary>
+          <span class="wisdom-volume-symbol">${unlockedEntries.length ? hexSymbol(hexagramId) : '·'}</span>
+          <span><strong>${escapeHtml(hexagram?.fn || `第 ${hexagramId} 卦`)}</strong><small>${unlockedEntries.length} / 8 則</small></span>
+        </summary>
+        <div class="wisdom-volume-content">${entryCards}</div>
+      </details>`;
+    }).join('');
+
+    return `<section class="wisdom-library">
+      <div class="wisdom-library-intro">
+        <div><strong>${unlockedCount}</strong> / 512</div>
+        <p>每卦各有 8 則：4 則格言、2 則原創預言故事、2 則《易經》名著名言。每天第一卦只收錄一則，收齊同卦 8 則前不會重複收藏。</p>
+      </div>
+      <div class="wisdom-volume-list">${volumes}</div>
+    </section>`;
+  }
+
   function openJournalEntry(id) {
     const entry = YiJournal.getEntry(id);
     if (!entry) return;
@@ -906,6 +986,7 @@ const App = (() => {
     reading = Divination.getReading(entry.lines);
     currentJournalId = entry.id;
     currentResultSource = 'history';
+    currentWisdom = entry.wisdom || null;
     history.replaceState(null, '', location.pathname);
     Analytics.trackEvent('history_reading_open', { direction: entry.direction, hexagram_id: entry.originalId });
     renderResult();
@@ -915,7 +996,12 @@ const App = (() => {
     document.querySelectorAll('.journal-tab').forEach(tab => {
       tab.addEventListener('click', () => {
         journalTab = tab.dataset.journalTab;
-        Analytics.trackEvent(journalTab === 'atlas' ? 'atlas_open' : 'history_open');
+        const eventName = journalTab === 'atlas'
+          ? 'atlas_open'
+          : journalTab === 'wisdom'
+            ? 'wisdom_library_open'
+            : 'history_open';
+        Analytics.trackEvent(eventName);
         renderJournalPage();
       });
     });
@@ -1029,6 +1115,7 @@ const App = (() => {
       reading = Divination.getReading(lines);
       currentJournalId = null;
       currentResultSource = 'shared';
+      currentWisdom = null;
       renderResult();
       return true;
     } catch(e) { return false; }
@@ -1070,7 +1157,15 @@ const App = (() => {
       ${renderDirectionChip(direction)}
     </div>`;
 
-    html += renderDailyWisdomCard(selectedDirection || 'general', 'daily-wisdom-card--result');
+    const resultWisdom = journalEntry?.wisdom?.text
+      ? journalEntry.wisdom
+      : currentResultSource === 'new' && currentWisdom
+        ? currentWisdom
+        : getHexagramWisdom(r.originalId);
+    const wisdomCollectionNote = journalEntry?.isDailyFirst && resultWisdom?.id
+      ? '已收進解答藏書'
+      : '本次僅供參考';
+    html += renderDailyWisdomCard(resultWisdom, 'daily-wisdom-card--result', wisdomCollectionNote);
 
     html += renderDecisionCompanion(decisionCue, journalEntry);
 

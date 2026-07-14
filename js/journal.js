@@ -1,6 +1,6 @@
 /**
  * 決策卦跡：所有資料只保存在目前裝置。
- * 每天第一筆正式起卦會標記為「今日一卦」，也只有這筆能解鎖圖鑑。
+ * 每天第一筆正式起卦會標記為「今日一卦」，也只有這筆能解鎖圖鑑與解答藏書。
  */
 const YiJournal = (() => {
   const STORAGE_KEY = 'yi_journal_v1';
@@ -14,7 +14,7 @@ const YiJournal = (() => {
   }
 
   function emptyData() {
-    return { version: 1, history: [], unlocked: {} };
+    return { version: 2, history: [], unlocked: {}, wisdomUnlocked: {} };
   }
 
   function getData() {
@@ -22,9 +22,12 @@ const YiJournal = (() => {
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
       if (!saved || !Array.isArray(saved.history)) return emptyData();
       return {
-        version: 1,
+        version: 2,
         history: saved.history,
-        unlocked: saved.unlocked && typeof saved.unlocked === 'object' ? saved.unlocked : {}
+        unlocked: saved.unlocked && typeof saved.unlocked === 'object' ? saved.unlocked : {},
+        wisdomUnlocked: saved.wisdomUnlocked && typeof saved.wisdomUnlocked === 'object'
+          ? saved.wisdomUnlocked
+          : {}
       };
     } catch {
       return emptyData();
@@ -62,8 +65,16 @@ const YiJournal = (() => {
       changedId: payload.reading.changedId || null,
       changingLines: payload.reading.changingLines.slice(),
       wisdom: payload.wisdom ? {
+        id: payload.wisdom.id || '',
+        hexagramId: Number(payload.wisdom.hexagramId) || originalId,
+        index: Number.isInteger(payload.wisdom.index) ? payload.wisdom.index : null,
+        type: payload.wisdom.type || 'maxim',
+        label: payload.wisdom.label || '卦象格言',
+        title: payload.wisdom.title || '',
         dateKey: payload.wisdom.dateKey,
-        text: payload.wisdom.text
+        dateLabel: payload.wisdom.dateLabel || '',
+        text: payload.wisdom.text,
+        source: payload.wisdom.source || ''
       } : null,
       decision: payload.decision ? {
         key: payload.decision.key,
@@ -84,6 +95,17 @@ const YiJournal = (() => {
       unlockedNow = true;
     }
 
+    let wisdomUnlockedNow = false;
+    if (isDailyFirst && entry.wisdom?.id && !data.wisdomUnlocked[entry.wisdom.id]) {
+      data.wisdomUnlocked[entry.wisdom.id] = {
+        firstSeenAt: entry.createdAt,
+        readingId: entry.id,
+        hexagramId: originalId,
+        index: entry.wisdom.index
+      };
+      wisdomUnlockedNow = true;
+    }
+
     data.history.unshift(entry);
     data.history = data.history.slice(0, MAX_HISTORY);
     const saved = saveData(data);
@@ -92,7 +114,9 @@ const YiJournal = (() => {
       entry,
       isDailyFirst,
       unlockedNow,
-      unlockedCount: Object.keys(data.unlocked).length
+      unlockedCount: Object.keys(data.unlocked).length,
+      wisdomUnlockedNow,
+      wisdomUnlockedCount: Object.keys(data.wisdomUnlocked).length
     };
   }
 
@@ -155,6 +179,17 @@ const YiJournal = (() => {
     });
   }
 
+  function getWisdomIndexes(hexagramId) {
+    const id = Number(hexagramId);
+    return Object.values(getData().wisdomUnlocked)
+      .filter(item => Number(item.hexagramId) === id && Number.isInteger(item.index))
+      .map(item => item.index);
+  }
+
+  function getWisdomCollection() {
+    return { ...getData().wisdomUnlocked };
+  }
+
   function getSummary() {
     const data = getData();
     const today = dateKey();
@@ -164,6 +199,7 @@ const YiJournal = (() => {
       historyCount: data.history.length,
       favoriteCount: data.history.filter(item => item.favorite).length,
       unlockedCount: Object.keys(data.unlocked).length,
+      wisdomUnlockedCount: Object.keys(data.wisdomUnlocked).length,
       monthDays: new Set(dailyEntries.filter(item => item.dateKey.startsWith(monthPrefix)).map(item => item.dateKey)).size,
       pendingEchoCount: dailyEntries.filter(item => item.dateKey < today && !item.echo).length,
       today: dailyEntries.find(item => item.dateKey === today) || null
@@ -180,6 +216,8 @@ const YiJournal = (() => {
     toggleFavorite,
     saveEcho,
     getAtlas,
+    getWisdomIndexes,
+    getWisdomCollection,
     getSummary
   };
 })();

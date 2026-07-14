@@ -36,11 +36,17 @@
 .quick-answer-meta{font-size:.78rem;color:var(--text-dim);margin-top:1rem;letter-spacing:.08em}
 
 /* 每日格言 */
-.daily-wisdom-card{background:linear-gradient(135deg,var(--surface-soft),rgba(242,201,76,0.04));border:1px solid var(--card-border);border-radius:var(--radius-md);padding:1.35rem 1.4rem;margin:0 auto 2rem;max-width:38rem;text-align:center;box-shadow:0 0 24px var(--shadow-color)}
+.daily-wisdom-card{--wisdom-accent:var(--gold-primary);--wisdom-glow:var(--gold-glow);background:radial-gradient(circle at 50% 0%,var(--wisdom-glow),transparent 58%),linear-gradient(135deg,var(--surface-soft),rgba(242,201,76,0.04));border:1px solid color-mix(in srgb,var(--wisdom-accent) 34%,transparent);border-radius:var(--radius-md);padding:1.5rem 1.4rem;margin:0 auto 2rem;max-width:38rem;text-align:center;box-shadow:0 0 24px var(--shadow-color)}
+.daily-wisdom-card[data-type="story"]{--wisdom-accent:var(--study-color);--wisdom-glow:var(--study-glow)}
+.daily-wisdom-card[data-type="classic"]{--wisdom-accent:var(--career-color);--wisdom-glow:var(--career-glow)}
+.daily-wisdom-card--preview{padding:1.25rem 1.4rem}
 .daily-wisdom-card--result{margin-bottom:2.5rem}
-.daily-wisdom-label{font-size:.76rem;color:var(--text-dim);letter-spacing:.18em;text-transform:uppercase}
-.daily-wisdom-date{font-size:.78rem;color:var(--gold-light);margin-top:.35rem;letter-spacing:.08em}
+.daily-wisdom-label{font-size:.76rem;color:var(--wisdom-accent);letter-spacing:.18em;text-transform:uppercase}
+.daily-wisdom-date{font-size:.72rem;color:var(--text-dim);margin-top:.35rem;letter-spacing:.08em}
+.daily-wisdom-title{font-family:var(--font-display);font-size:1.12rem;color:var(--wisdom-accent);margin-top:.75rem;letter-spacing:.08em}
 .daily-wisdom-text{font-family:var(--font-serif);font-size:1.02rem;color:var(--text-primary);line-height:1.9;margin-top:.85rem}
+.daily-wisdom-source{font-size:.75rem;color:var(--wisdom-accent);margin-top:.75rem;letter-spacing:.06em}
+.daily-wisdom-meta{font-size:.68rem;color:var(--text-dim);margin-top:.85rem;letter-spacing:.08em}
 
 /* 決策問題 */
 #scene-method{justify-content:flex-start;padding-top:5rem;padding-bottom:3rem}
@@ -84,13 +90,13 @@
 .journal-eyebrow{text-align:center;color:var(--gold-primary);font-size:.72rem;letter-spacing:.24em}
 .journal-title{text-align:center;font-family:var(--font-display);font-weight:400;font-size:clamp(2.2rem,6vw,3.6rem);letter-spacing:.12em;color:var(--gold-light);margin:.5rem 0}
 .journal-subtitle{max-width:36rem;margin:0 auto 2rem;text-align:center;color:var(--text-secondary);font-size:.86rem;line-height:1.8}
-.journal-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;margin:0 auto 2rem}
+.journal-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:.75rem;margin:0 auto 2rem}
 .journal-stat{display:flex;flex-direction:column;align-items:center;padding:1.1rem .7rem;border:1px solid var(--card-border);border-radius:var(--radius-md);background:var(--surface-subtle)}
 .journal-stat strong{font-family:var(--font-display);font-size:1.6rem;font-weight:400;color:var(--gold-primary)}
 .journal-stat strong small{font-size:.72rem;color:var(--text-dim)}
 .journal-stat span{font-size:.72rem;color:var(--text-dim);letter-spacing:.08em}
 .journal-tabs{display:flex;justify-content:center;gap:.45rem;margin-bottom:1.5rem;padding:.3rem;border:1px solid var(--surface-border);border-radius:999px;background:var(--surface-subtle)}
-.journal-tab{flex:1;max-width:15rem;border:0;border-radius:999px;padding:.65rem 1rem;background:transparent;color:var(--text-secondary);font:inherit;font-size:.82rem;cursor:pointer;transition:background .2s,color .2s}
+.journal-tab{flex:1;min-width:0;max-width:15rem;border:0;border-radius:999px;padding:.65rem .65rem;background:transparent;color:var(--text-secondary);font:inherit;font-size:.82rem;cursor:pointer;transition:background .2s,color .2s;white-space:nowrap}
 .journal-tab.active{background:var(--gold-primary);color:var(--on-accent);font-weight:700}
 .journal-content{min-height:18rem}
 .journal-section-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:1rem;margin:0 0 .8rem}
@@ -133,7 +139,33 @@
 .atlas-name{font-size:.67rem;color:var(--text-secondary)}
 .feedback-delivery-note{font-size:.72rem;color:var(--text-dim);line-height:1.6;margin:-.75rem 0 1.15rem}
 
-.home-journal-btn:focus-visible,.journal-tab:focus-visible,.history-open-btn:focus-visible,.echo-actions button:focus-visible,.atlas-cell:focus-visible,.decision-question-box textarea:focus-visible,.decision-reflection textarea:focus-visible{outline:2px solid var(--gold-primary);outline-offset:3px}
+/* 解答藏書 */
+.wisdom-library-intro{display:flex;align-items:center;gap:1.3rem;margin-bottom:1.3rem;padding:1rem 1.1rem;border:1px solid var(--card-border);border-radius:var(--radius-md);background:var(--surface-subtle)}
+.wisdom-library-intro>div{white-space:nowrap;font-family:var(--font-display);font-size:1.15rem;color:var(--gold-primary)}
+.wisdom-library-intro p{color:var(--text-secondary);font-size:.78rem;line-height:1.7}
+.wisdom-volume-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.65rem}
+.wisdom-volume{border:1px solid var(--card-border);border-radius:var(--radius-md);background:var(--surface-subtle);overflow:hidden}
+.wisdom-volume.locked{border-color:var(--surface-border)}
+.wisdom-volume summary{display:flex;align-items:center;gap:.8rem;min-height:4.2rem;padding:.8rem 1rem;color:var(--text-primary);cursor:pointer;list-style:none}
+.wisdom-volume summary::-webkit-details-marker{display:none}
+.wisdom-volume summary::after{content:'＋';margin-left:auto;color:var(--gold-primary);font-size:1rem}
+.wisdom-volume[open] summary::after{content:'－'}
+.wisdom-volume summary>span:nth-child(2){display:flex;flex-direction:column;min-width:0}
+.wisdom-volume summary strong{font-family:var(--font-serif);font-size:.9rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wisdom-volume summary small{font-size:.66rem;color:var(--text-dim);margin-top:.12rem}
+.wisdom-volume-symbol{display:grid;place-items:center;width:2.2rem;height:2.2rem;border:1px solid var(--card-border);border-radius:50%;color:var(--gold-primary);font-size:1.35rem;flex-shrink:0}
+.wisdom-volume.locked .wisdom-volume-symbol{border-color:var(--surface-border);color:var(--locked-text)}
+.wisdom-volume-content{display:grid;gap:.55rem;padding:0 .75rem .75rem}
+.wisdom-volume-empty{padding:.8rem;color:var(--text-dim);font-size:.74rem;text-align:center}
+.wisdom-entry{--entry-color:var(--gold-primary);padding:.9rem;border-left:2px solid var(--entry-color);border-radius:0 var(--radius-sm) var(--radius-sm) 0;background:var(--surface-soft)}
+.wisdom-entry[data-type="story"]{--entry-color:var(--study-color)}
+.wisdom-entry[data-type="classic"]{--entry-color:var(--career-color)}
+.wisdom-entry-label{font-size:.64rem;color:var(--entry-color);letter-spacing:.08em}
+.wisdom-entry-title{font-family:var(--font-serif);font-size:.86rem;color:var(--text-primary);margin:.28rem 0}
+.wisdom-entry-text{font-size:.75rem;color:var(--text-secondary);line-height:1.75}
+.wisdom-entry-source{font-size:.65rem;color:var(--entry-color);margin-top:.45rem}
+
+.home-journal-btn:focus-visible,.journal-tab:focus-visible,.history-open-btn:focus-visible,.echo-actions button:focus-visible,.atlas-cell:focus-visible,.wisdom-volume summary:focus-visible,.decision-question-box textarea:focus-visible,.decision-reflection textarea:focus-visible{outline:2px solid var(--gold-primary);outline-offset:3px}
 
 /* 核心金句 */
 .core-answer{background:var(--core-answer-bg);border:1px solid var(--card-border);border-radius:var(--radius-lg);padding:4rem 2.5rem;margin-bottom:4rem;text-align:center;position:relative;overflow:hidden}
@@ -232,7 +264,8 @@
   .decision-companion{padding:2rem 1.2rem}
   .decision-reflection-actions{align-items:flex-start;flex-direction:column}
   .scene--journal{padding:5rem 1rem 4rem}
-  .journal-summary{gap:.45rem}
+  .journal-summary{grid-template-columns:repeat(2,1fr);gap:.45rem}
+  .journal-tab{padding:.6rem .35rem;font-size:.72rem}
   .journal-stat{padding:.85rem .35rem}
   .journal-stat strong{font-size:1.35rem}
   .journal-stat span{font-size:.64rem}
@@ -241,6 +274,8 @@
   .history-card-side{grid-column:2;flex-direction:row;justify-content:flex-end}
   .atlas-intro{align-items:flex-start;flex-direction:column;gap:.4rem}
   .atlas-grid{grid-template-columns:repeat(4,1fr)}
+  .wisdom-library-intro{align-items:flex-start;flex-direction:column;gap:.4rem}
+  .wisdom-volume-list{grid-template-columns:1fr}
 }
 
 @media(max-width:380px){.direction-grid{grid-template-columns:1fr}}
