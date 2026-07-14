@@ -261,22 +261,19 @@ const App = (() => {
         key: 'courage',
         label: '勇敢一次',
         headline: '你可以往前一小步。',
-        detail: '條件正在支持行動。不是要你一次押上全部，而是別讓猶豫遮住已經準備好的自己。',
-        reflectionPrompt: '如果勇敢一次，你願意先做哪一小步？'
+        detail: '條件正在支持行動。不是要你一次押上全部，而是別讓猶豫遮住已經準備好的自己。'
       },
       no: {
         key: 'pause',
         label: '停一下',
         headline: '暫停不是退縮。',
-        detail: '現在更適合保留力氣、補足資訊或重新確認界線。先不做，也是一個有意識的決定。',
-        reflectionPrompt: '如果先停一下，你想保護什麼？'
+        detail: '現在更適合保留力氣、補足資訊或重新確認界線。先不做，也是一個有意識的決定。'
       },
       wait: {
         key: 'stay',
         label: '現在也很好',
         headline: '不必為了改變而改變。',
-        detail: '眼前沒有非動不可的訊號。維持、觀察、讓事情多長一點，也是一種成熟的前進。',
-        reflectionPrompt: '現在已經有什麼，是你想好好保留的？'
+        detail: '眼前沒有非動不可的訊號。維持、觀察、讓事情多長一點，也是一種成熟的前進。'
       }
     };
     return cues[verdict];
@@ -350,34 +347,17 @@ const App = (() => {
     if (!journalEntry || typeof YiJournal === 'undefined') return '';
     const options = YiJournal.getResponseOptions();
     const response = journalEntry.userResponse || {};
-    const selectedReaction = new Set(response.reaction?.key ? [response.reaction.key] : []);
     const selectedChoice = new Set(response.choice?.key ? [response.choice.key] : []);
-    const selectedValues = new Set((response.values || []).map(item => item.key));
-    const hasResponse = selectedReaction.size || selectedChoice.size || selectedValues.size;
 
-    return `<section class="decision-response" id="decision-user-response">
+    return `<section class="decision-response decision-response--simple" id="decision-user-response">
       <div class="decision-response-eyebrow">卦象說完了，換你</div>
-      <h2>不管卦象怎麼說，你怎麼回應？</h2>
-      <div class="response-group">
-        <div class="response-group-title">這個提醒，和你現在的感受</div>
-        <div class="response-chip-list" role="group" aria-label="我對卦象的反應">
-          ${renderResponseChips(options.reactions, 'reaction', selectedReaction)}
-        </div>
-      </div>
-      <div class="response-group">
-        <div class="response-group-title">所以，此刻的你決定</div>
-        <div class="response-chip-list" role="group" aria-label="我此刻的選擇">
-          ${renderResponseChips(options.choices, 'choice', selectedChoice)}
-        </div>
-      </div>
-      <div class="response-group">
-        <div class="response-group-title">這個選擇，現在最想保護什麼？<small>最多兩個</small></div>
-        <div class="response-chip-list response-chip-list--values" role="group" aria-label="我想保護的價值">
-          ${renderResponseChips(options.values, 'value', selectedValues)}
-        </div>
+      <h2>此刻，你比較想怎麼做？</h2>
+      <p class="decision-response-copy">選一個念頭就好。不想選，也可以帶著這一卦離開。</p>
+      <div class="response-chip-list" role="group" aria-label="我此刻想怎麼做">
+        ${renderResponseChips(options.choices, 'choice', selectedChoice)}
       </div>
       <div class="decision-response-status" id="decision-response-status" aria-live="polite">
-        ${hasResponse ? '已記下你的回應，可以隨時改變主意。' : '點一下就會留進卦跡；改變主意也沒關係。'}
+        ${selectedChoice.size ? '好，這個念頭已替你收進卦跡。' : '這一卦已經收好；你不必完成任何事。'}
       </div>
     </section>`;
   }
@@ -386,18 +366,18 @@ const App = (() => {
     const card = document.getElementById('decision-user-response');
     if (!card) return;
     const response = entry.userResponse || {};
-    const selected = {
-      reaction: new Set(response.reaction?.key ? [response.reaction.key] : []),
-      choice: new Set(response.choice?.key ? [response.choice.key] : []),
-      value: new Set((response.values || []).map(item => item.key))
-    };
+    const selectedChoice = new Set(response.choice?.key ? [response.choice.key] : []);
     card.querySelectorAll('[data-response-type]').forEach(button => {
-      const active = selected[button.dataset.responseType]?.has(button.dataset.responseKey) || false;
+      const active = selectedChoice.has(button.dataset.responseKey);
       button.classList.toggle('selected', active);
       button.setAttribute('aria-pressed', active ? 'true' : 'false');
     });
     const status = document.getElementById('decision-response-status');
-    if (status) status.textContent = '已記下你的回應，可以隨時改變主意。';
+    if (status) {
+      status.textContent = selectedChoice.size
+        ? '好，這個念頭已替你收進卦跡。再點一次，可以把它放下。'
+        : '這一卦已經收好；你不必完成任何事。';
+    }
   }
 
   function initUserResponseInteractions() {
@@ -406,48 +386,42 @@ const App = (() => {
     card.addEventListener('click', event => {
       const button = event.target.closest('[data-response-type]');
       if (!button) return;
-      const type = button.dataset.responseType;
       const key = button.dataset.responseKey;
       const current = YiJournal.getEntry(currentJournalId)?.userResponse || {};
-      let payload;
-
-      if (type === 'reaction') payload = { reactionKey: key };
-      else if (type === 'choice') payload = { choiceKey: key };
-      else {
-        const valueKeys = (current.values || []).map(item => item.key);
-        const selected = valueKeys.includes(key);
-        if (!selected && valueKeys.length >= 2) {
-          showToast('先選最重要的兩個就好');
-          return;
-        }
-        payload = { valueKeys: selected ? valueKeys.filter(item => item !== key) : [...valueKeys, key] };
-      }
-
-      const updated = YiJournal.saveUserResponse(currentJournalId, payload);
+      const isClearing = current.choice?.key === key;
+      const updated = YiJournal.saveUserResponse(currentJournalId, {
+        choiceKey: isClearing ? null : key
+      });
       if (!updated) {
         showToast('這次沒有保存成功，請再試一次');
         return;
       }
       syncUserResponseCard(updated);
       Analytics.trackEvent('decision_response_saved', {
-        response_stage: type,
-        value_count: updated.userResponse?.values?.length || 0,
+        response_stage: 'choice',
+        action: isClearing ? 'clear' : 'select',
         has_choice: !!updated.userResponse?.choice
       });
     });
   }
 
-  function renderReflectionCard(cue, journalEntry) {
+  function renderReflectionCard(journalEntry) {
     if (!journalEntry) return '';
-    return `<section class="decision-reflection">
-      <div class="decision-reflection-label">留一句給之後的自己</div>
-      <label for="decision-reflection">${cue.reflectionPrompt}</label>
-      <textarea id="decision-reflection" maxlength="280" rows="3" placeholder="寫下一句就好…">${escapeHtml(journalEntry.reflection || '')}</textarea>
-      <div class="decision-reflection-actions">
-        <span>只保存在你的裝置</span>
-        <button type="button" class="btn btn--ghost" id="btn-save-reflection">保存卦跡</button>
+    const hasReflection = !!journalEntry.reflection;
+    return `<details class="decision-reflection"${hasReflection ? ' open' : ''}>
+      <summary>
+        <span>想留一句給之後的自己</span>
+        <small class="decision-reflection-state">${hasReflection ? '已留下一句' : '選填，現在不寫也沒關係'}</small>
+      </summary>
+      <div class="decision-reflection-body">
+        <label for="decision-reflection">有一瞬間想記住，再寫就好。</label>
+        <textarea id="decision-reflection" maxlength="280" rows="2" placeholder="一句話、幾個字，都可以…">${escapeHtml(journalEntry.reflection || '')}</textarea>
+        <div class="decision-reflection-actions">
+          <span>只保存在你的裝置</span>
+          <button type="button" class="btn btn--ghost" id="btn-save-reflection">收好這句</button>
+        </div>
       </div>
-    </section>`;
+    </details>`;
   }
 
   function escapeHtml(value) {
@@ -958,9 +932,16 @@ const App = (() => {
   }
 
   function openJournal(tab = 'history') {
+    const source = currentScene;
+    const backButton = document.querySelector('#scene-journal .back-btn');
+    if (backButton) {
+      const returnsToResult = source === 'result';
+      backButton.dataset.back = returnsToResult ? 'result' : 'home';
+      backButton.setAttribute('aria-label', returnsToResult ? '返回卦象結果' : '返回首頁');
+    }
     journalTab = tab;
     renderJournalPage();
-    Analytics.trackEvent('journal_open', { tab });
+    Analytics.trackEvent('journal_open', { tab, source });
     goTo('journal');
   }
 
@@ -1025,15 +1006,15 @@ const App = (() => {
     const review = YiJournal.getSevenDayReview();
     const insight = review.topChoice
       ? `這段時間，你最常對自己說：「${escapeHtml(review.topChoice.label)}」`
-      : '卦象已經留下。下一次，也記下你自己的選擇。';
-    const valueInsight = review.topValues.length
-      ? `<span>你常在保護：${review.topValues.map(item => escapeHtml(item.label)).join('、')} · 已留下 ${review.echoDays} 則隔日回聲</span>`
-      : `<span>價值標籤會慢慢拼出你在意的事 · 已留下 ${review.echoDays} 則隔日回聲</span>`;
+      : '有些日子，只需要被陪一下，不必留下答案。';
+    const echoInsight = `<span>${review.echoDays
+      ? `後來回來看了 ${review.echoDays} 次。`
+      : '想回來看時再回來，沒有進度要追。'}</span>`;
     const dayCells = review.days.map(day => {
       const label = formatReviewDay(day.dateKey);
       const hasReading = !!day.entry;
       const hasResponse = !!day.entry?.userResponse?.choice;
-      const state = hasResponse ? '有自己的選擇' : hasReading ? '有今日一卦' : '沒有紀錄';
+      const state = hasResponse ? '有自己的選擇' : hasReading ? '有卦象陪伴' : '沒有紀錄';
       return `<div class="review-day${hasReading ? ' has-reading' : ''}${hasResponse ? ' has-response' : ''}"
         aria-label="${label.weekday} ${label.day} 日，${state}">
         <span>${label.weekday}</span><strong>${label.day}</strong><i></i>
@@ -1043,7 +1024,7 @@ const App = (() => {
       const entry = day.entry;
       const label = formatReviewDay(day.dateKey);
       const cue = entry.decision?.label || '卦象提醒';
-      const choice = entry.userResponse?.choice?.label || '還沒留下自己的選擇';
+      const choice = entry.userResponse?.choice?.label || '那天只讓卦象陪一下';
       const echo = entry.echo?.label
         ? `<small>後來：${escapeHtml(entry.echo.label)}</small>`
         : '';
@@ -1062,12 +1043,12 @@ const App = (() => {
           <span>最近 7 日</span>
           <h2>正在拼回自己的方向</h2>
         </div>
-        <div class="seven-day-score"><strong>${review.responseDays}<small>/7</small></strong><span>天留下選擇</span></div>
+        <div class="seven-day-score"><strong>${review.completedDays}</strong><span>次相遇</span></div>
       </div>
       <div class="review-days">${dayCells}</div>
-      <div class="review-insight"><strong>${insight}</strong>${valueInsight}</div>
+      <div class="review-insight"><strong>${insight}</strong>${echoInsight}</div>
       ${trail ? `<div class="review-trail">${trail}</div>` : ''}
-      <div class="review-footnote">沒有連續也沒關係。這裡記的是你走過，不是你打卡。</div>
+      <div class="review-footnote">這裡不是作業，也不必補齊。只是替走過的自己留一點光。</div>
     </section>`;
   }
 
@@ -1104,12 +1085,9 @@ const App = (() => {
       ? `<div class="history-card-echo">後來：${escapeHtml(entry.echo.label)}</div>`
       : '';
     const response = entry.userResponse;
-    const personal = response?.reaction || response?.choice || response?.values?.length
-      ? `<div class="history-card-response">
-          ${response.reaction ? `<span>我的反應：${escapeHtml(response.reaction.label)}</span>` : ''}
-          ${response.choice ? `<strong>我的選擇：${escapeHtml(response.choice.label)}</strong>` : ''}
-          ${response.values?.length ? `<small>想保護：${response.values.map(item => escapeHtml(item.label)).join('、')}</small>` : ''}
-        </div>`
+    const personalLabel = response?.choice?.label || response?.reaction?.label;
+    const personal = personalLabel
+      ? `<div class="history-card-response"><strong>${response?.choice ? '那時我想' : '那時我回了一句'}：${escapeHtml(personalLabel)}</strong></div>`
       : '';
     return `<article class="history-card">
       <div class="history-card-symbol">${hexSymbol(entry.originalId)}</div>
@@ -1471,14 +1449,14 @@ const App = (() => {
     </div>`;
 
     html += renderUserResponseCard(journalEntry);
-    html += renderReflectionCard(decisionCue, journalEntry);
+    html += renderReflectionCard(journalEntry);
 
     // 底部操作
     html += `<div class="result-actions">
-      <button class="btn btn--primary" id="btn-restart">問另一件事</button>
+      <button class="btn btn--primary" id="btn-journal-from-result">看我的卦跡</button>
+      <button class="btn btn--ghost" id="btn-restart">問另一件事</button>
       <button class="btn btn--share" id="btn-share-image">儲存圖片</button>
       <button class="btn btn--share" id="btn-share-link">分享連結</button>
-      <button class="btn btn--ghost" id="btn-home-from-result">回到首頁</button>
     </div>
     <div class="result-footer-btns">
       <button class="btn-icon${journalEntry?.favorite ? ' liked' : ''}" id="btn-like" title="收藏這一卦" aria-pressed="${journalEntry?.favorite ? 'true' : 'false'}">
@@ -1499,10 +1477,7 @@ const App = (() => {
       resetDecisionFlow();
       goTo('home');
     });
-    document.getElementById('btn-home-from-result')?.addEventListener('click', () => {
-      resetDecisionFlow();
-      goTo('home');
-    });
+    document.getElementById('btn-journal-from-result')?.addEventListener('click', () => openJournal('history'));
 
     document.getElementById('btn-save-reflection')?.addEventListener('click', () => {
       if (!currentJournalId) return;
@@ -1518,6 +1493,8 @@ const App = (() => {
         text_length: updated.reflection.length,
         decision_cue: updated.decision?.key || ''
       });
+      const state = document.querySelector('.decision-reflection-state');
+      if (state) state.textContent = updated.reflection ? '已留下一句' : '選填，現在不寫也沒關係';
       showToast('已留在你的卦跡裡');
     });
 
