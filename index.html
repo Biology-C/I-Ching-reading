@@ -3,19 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="線上易經問卦解卦工具 — 64卦386爻辭，三段式動態解讀，4096種占卜結果">
-  <title>易 — 線上問卦</title>
-  <link rel="stylesheet" href="css/style.css">
-  <link rel="stylesheet" href="css/style2.css">
-  <link rel="stylesheet" href="css/style3.css">
-  <!-- Google Analytics — 請將 G-XXXXXXXXXX 替換為你的 Measurement ID -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-XXXXXXXXXX');
-  </script>
+  <meta name="description" content="易 — 在人生卡住時，陪你判斷該停一下、勇敢一次，或看見現在也很好。">
+  <title>易 — 人生決策輔助器</title>
+  <link rel="stylesheet" href="css/style.css?v=20260714-1">
+  <link rel="stylesheet" href="css/style2.css?v=20260714-1">
+  <link rel="stylesheet" href="css/style3.css?v=20260714-1">
 </head>
 <body>
   <svg class="icon-defs" aria-hidden="true" focusable="false">
@@ -96,8 +88,13 @@
   <div id="scene-home" class="scene active">
     <button type="button" id="home-enter" class="home-enter-btn" aria-label="開始問卦">
       <span class="home-title">易</span>
-      <span class="home-subtitle">問 卦 · 解 卦</span>
+      <span class="home-subtitle">人 生 決 策 輔 助 器</span>
       <span class="home-hint">靜心凝神，點擊開始</span>
+    </button>
+    <div id="home-daily-status" class="home-daily-status" aria-live="polite"></div>
+    <button type="button" id="btn-open-journal" class="home-journal-btn">
+      <svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-book"></use></svg>
+      <span>我的卦跡</span>
     </button>
   </div>
 
@@ -106,7 +103,7 @@
     <button type="button" class="back-btn" data-back="home" aria-label="返回首頁">
       <svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-arrow-left"></use></svg>
     </button>
-    <div class="direction-title">你想問什麼方向？</div>
+    <div class="direction-title">你現在卡在哪個方向？</div>
     <div class="direction-grid">
       <button type="button" class="direction-card direction-card--wide" data-direction="yesno" id="dir-yesno">
         <span class="direction-icon" aria-hidden="true">
@@ -153,6 +150,11 @@
     </button>
     <div class="method-title">選擇起卦方式</div>
     <div class="method-subtitle" id="method-subtitle">心中默念你的問題，然後選擇一種方式</div>
+    <div class="decision-question-box">
+      <label for="decision-question">記下你正在猶豫的事</label>
+      <textarea id="decision-question" rows="2" maxlength="160" placeholder="例如：我要不要主動聯絡？（可以留空）"></textarea>
+      <span>只保存在你的裝置，不會送到分析工具。</span>
+    </div>
     <div id="daily-wisdom-method"></div>
 
     <div class="method-tabs">
@@ -237,6 +239,24 @@
     </div>
   </div>
 
+  <!-- ═══ 場景 6：決策卦跡與圖鑑 ═══ -->
+  <div id="scene-journal" class="scene scene--journal">
+    <button type="button" class="back-btn" data-back="home" aria-label="返回首頁">
+      <svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-arrow-left"></use></svg>
+    </button>
+    <div class="journal-shell">
+      <div class="journal-eyebrow">決策陪伴紀錄</div>
+      <h1 class="journal-title">我的卦跡</h1>
+      <p class="journal-subtitle">不是為了證明答案準不準，而是看見自己如何走過每一次猶豫。</p>
+      <div id="journal-summary" class="journal-summary"></div>
+      <div class="journal-tabs" role="tablist" aria-label="卦跡內容">
+        <button type="button" class="journal-tab active" data-journal-tab="history" role="tab" aria-selected="true">卦跡與回聲</button>
+        <button type="button" class="journal-tab" data-journal-tab="atlas" role="tab" aria-selected="false">六十四卦圖鑑</button>
+      </div>
+      <div id="journal-content" class="journal-content"></div>
+    </div>
+  </div>
+
   <!-- 意見回饋 Modal -->
   <div id="feedback-modal" class="modal-overlay">
     <div class="modal-card">
@@ -249,9 +269,10 @@
         <button type="button" class="star" data-v="5" aria-label="5 顆星" aria-pressed="false"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-star"></use></svg></button>
       </div>
       <textarea id="feedback-text" class="feedback-textarea" placeholder="說說你的想法、建議，或這一卦對你的意義…" aria-label="意見內容" rows="4"></textarea>
+      <p class="feedback-delivery-note" id="feedback-delivery-note">送出後會開啟郵件，請在郵件程式中確認寄出。</p>
       <div class="btn-row">
         <button type="button" class="btn btn--ghost" id="btn-feedback-cancel">取消</button>
-        <button type="button" class="btn btn--primary" id="btn-feedback-submit">送出</button>
+        <button type="button" class="btn btn--primary" id="btn-feedback-submit">寄出回饋</button>
       </div>
     </div>
   </div>
@@ -261,13 +282,15 @@
 
   <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-  <script src="js/hexagram-data.js"></script>
-  <script src="js/hexagram-data-2.js"></script>
-  <script src="js/hexagram-data-3.js"></script>
-  <script src="js/hexagram-data-4.js"></script>
-  <script src="js/divination.js"></script>
-  <script src="js/daily-wisdom.js"></script>
-  <script src="js/analytics.js"></script>
-  <script src="js/app.js"></script>
+  <script src="js/config.js?v=20260714-1"></script>
+  <script src="js/hexagram-data.js?v=20260714-1"></script>
+  <script src="js/hexagram-data-2.js?v=20260714-1"></script>
+  <script src="js/hexagram-data-3.js?v=20260714-1"></script>
+  <script src="js/hexagram-data-4.js?v=20260714-1"></script>
+  <script src="js/divination.js?v=20260714-1"></script>
+  <script src="js/daily-wisdom.js?v=20260714-1"></script>
+  <script src="js/journal.js?v=20260714-1"></script>
+  <script src="js/analytics.js?v=20260714-1"></script>
+  <script src="js/app.js?v=20260714-1"></script>
 </body>
 </html>

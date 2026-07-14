@@ -72,8 +72,8 @@ body{font-family:'GenJyuu','Noto Sans TC',sans-serif;color:var(--text-primary);b
 /* 場景系統 */
 .scene{position:fixed;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:1;opacity:0;visibility:hidden;transition:opacity .8s var(--ease-dramatic),visibility .8s;padding:1.5rem;overflow-y:auto}
 .scene.active{opacity:1;visibility:visible}
-.scene--result{position:relative;height:auto;min-height:100vh;justify-content:flex-start;padding-top:4rem;padding-bottom:4rem}
-.scene--result.active{position:relative}
+.scene--result{position:fixed;height:100%;min-height:100vh;justify-content:flex-start;padding-top:4rem;padding-bottom:4rem}
+.scene--result.active{position:relative;height:auto}
 
 /* 場景1：首頁 */
 .home-enter-btn{display:inline-flex;flex-direction:column;align-items:center;background:none;border:0;padding:1.5rem 1rem 2rem;color:inherit;font:inherit;text-align:center;cursor:pointer;border-radius:var(--radius-lg)}

@@ -11,6 +11,9 @@ const App = (() => {
   let isTossAnimating = false;
   let reading = null;
   let feedbackRating = 0;
+  let currentJournalId = null;
+  let currentResultSource = 'new';
+  let journalTab = 'history';
 
   const defaultMethodPrompt = '心中默念你的問題，然後選擇一種方式';
   const directionMeta = {
@@ -58,10 +61,11 @@ const App = (() => {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     let particles = [];
+    const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
     function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
     resize(); window.addEventListener('resize', resize);
 
-    for (let i = 0; i < 50; i++) {
+    for (let i = 0; i < (reduceMotion ? 18 : 50); i++) {
       particles.push({
         x: Math.random()*canvas.width, y: Math.random()*canvas.height,
         vx: (Math.random()-0.5)*0.3, vy: -Math.random()*0.5 - 0.1,
@@ -79,7 +83,7 @@ const App = (() => {
         if (p.x < -10) p.x = canvas.width+10;
         if (p.x > canvas.width+10) p.x = -10;
       });
-      requestAnimationFrame(draw);
+      if (!reduceMotion) requestAnimationFrame(draw);
     }
     draw();
   }
@@ -189,6 +193,65 @@ const App = (() => {
     </div>`;
   }
 
+  function getDecisionCue(readingData) {
+    const verdict = getYesNoAnswer(readingData).answer;
+    const cues = {
+      yes: {
+        key: 'courage',
+        label: '勇敢一次',
+        headline: '你可以往前一小步。',
+        detail: '條件正在支持行動。不是要你一次押上全部，而是別讓猶豫遮住已經準備好的自己。',
+        reflectionPrompt: '如果勇敢一次，你願意先做哪一小步？'
+      },
+      no: {
+        key: 'pause',
+        label: '停一下',
+        headline: '暫停不是退縮。',
+        detail: '現在更適合保留力氣、補足資訊或重新確認界線。先不做，也是一個有意識的決定。',
+        reflectionPrompt: '如果先停一下，你想保護什麼？'
+      },
+      wait: {
+        key: 'stay',
+        label: '現在也很好',
+        headline: '不必為了改變而改變。',
+        detail: '眼前沒有非動不可的訊號。維持、觀察、讓事情多長一點，也是一種成熟的前進。',
+        reflectionPrompt: '現在已經有什麼，是你想好好保留的？'
+      }
+    };
+    return cues[verdict];
+  }
+
+  function renderDecisionCompanion(cue, journalEntry) {
+    const question = journalEntry?.question
+      ? `<div class="decision-companion-question">你正在想：${escapeHtml(journalEntry.question)}</div>`
+      : '';
+    const dailyLabel = journalEntry?.isDailyFirst
+      ? `<div class="daily-reading-badge">${currentResultSource === 'new' ? '今日第一卦' : '當日第一卦'} · 已收進卦跡</div>`
+      : '';
+    return `<section class="decision-companion" data-cue="${cue.key}">
+      <div class="decision-companion-label">此刻的決策陪伴</div>
+      ${dailyLabel}
+      ${question}
+      <div class="decision-companion-value">${cue.label}</div>
+      <div class="decision-companion-headline">${cue.headline}</div>
+      <div class="decision-companion-detail">${cue.detail}</div>
+      <div class="decision-companion-note">它不替你決定，只陪你把心裡的方向看清楚。</div>
+    </section>`;
+  }
+
+  function renderReflectionCard(cue, journalEntry) {
+    if (!journalEntry) return '';
+    return `<section class="decision-reflection">
+      <div class="decision-reflection-label">留一句給之後的自己</div>
+      <label for="decision-reflection">${cue.reflectionPrompt}</label>
+      <textarea id="decision-reflection" maxlength="280" rows="3" placeholder="寫下一句就好…">${escapeHtml(journalEntry.reflection || '')}</textarea>
+      <div class="decision-reflection-actions">
+        <span>只保存在你的裝置</span>
+        <button type="button" class="btn btn--ghost" id="btn-save-reflection">保存卦跡</button>
+      </div>
+    </section>`;
+  }
+
   function escapeHtml(value) {
     return String(value)
       .replaceAll('&', '&amp;')
@@ -233,13 +296,62 @@ const App = (() => {
     if (btn) btn.disabled = disabled;
   }
 
+  function getDecisionQuestion() {
+    return document.getElementById('decision-question')?.value.trim() || '';
+  }
+
+  function resetDecisionFlow() {
+    coinTosses = [];
+    reading = null;
+    currentJournalId = null;
+    currentResultSource = 'new';
+    resetCoinUI();
+    const question = document.getElementById('decision-question');
+    if (question) question.value = '';
+    history.replaceState(null, '', location.pathname);
+  }
+
+  function recordCurrentReading() {
+    const cue = getDecisionCue(reading);
+    const wisdom = getDailyWisdom(selectedDirection || 'general');
+    const result = YiJournal.recordReading({
+      reading,
+      direction: selectedDirection,
+      method: currentMethod,
+      question: getDecisionQuestion(),
+      wisdom,
+      decision: cue
+    });
+    currentJournalId = result.saved ? result.entry.id : null;
+    currentResultSource = 'new';
+    renderHomeJournalStatus();
+    Analytics.trackQuestion(selectedDirection, currentMethod, {
+      daily_first: result.isDailyFirst,
+      atlas_unlocked: result.unlockedNow,
+      has_question: !!result.entry.question,
+      decision_cue: cue.key
+    });
+    if (result.isDailyFirst) {
+      Analytics.trackEvent('daily_reading_saved', {
+        hexagram_id: result.entry.originalId,
+        atlas_unlocked: result.unlockedNow,
+        unlocked_count: result.unlockedCount
+      });
+    }
+  }
+
   // === 場景管理 ===
   function goTo(scene) {
-    document.querySelectorAll('.scene').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.scene').forEach(s => {
+      s.classList.remove('active');
+      if (s.classList.contains('scene--result') || s.classList.contains('scene--journal')) {
+        s.style.position = 'fixed';
+      }
+    });
     const el = document.getElementById('scene-'+scene);
     if (el) {
-      // 結果頁需要特殊處理（可捲動）
-      if (scene === 'result') {
+      // 結果與卦跡頁需要自然捲動。
+      if (scene === 'result' || scene === 'journal') {
         document.body.style.overflow = 'auto';
         el.style.position = 'relative';
       } else {
@@ -248,21 +360,34 @@ const App = (() => {
       setTimeout(() => el.classList.add('active'), 50);
     }
     currentScene = scene;
-    if (scene === 'result') window.scrollTo(0,0);
+    if (scene === 'home') renderHomeJournalStatus();
+    if (scene === 'result' || scene === 'journal') window.scrollTo(0,0);
   }
 
   // === 事件綁定 ===
   function init() {
     initParticles();
     updateMethodContext();
+    const journalSummary = YiJournal.getSummary();
+    Analytics.init({
+      has_history: journalSummary.historyCount > 0,
+      has_today_reading: !!journalSummary.today
+    });
+    renderHomeJournalStatus();
+    initJournalInteractions();
 
     // 首頁點擊
-    document.getElementById('home-enter')?.addEventListener('click', () => goTo('direction'));
+    document.getElementById('home-enter')?.addEventListener('click', () => {
+      Analytics.trackEvent('decision_start', { has_today_reading: !!YiJournal.getToday() });
+      goTo('direction');
+    });
+    document.getElementById('btn-open-journal')?.addEventListener('click', () => openJournal('history'));
 
     // 方向選擇
     document.querySelectorAll('.direction-card').forEach(card => {
       card.addEventListener('click', () => {
         selectedDirection = card.dataset.direction;
+        Analytics.trackEvent('direction_select', { direction: selectedDirection });
         updateMethodContext();
         goTo('method');
       });
@@ -272,6 +397,7 @@ const App = (() => {
     document.querySelectorAll('.method-tab').forEach(tab => {
       tab.addEventListener('click', () => {
         currentMethod = tab.dataset.method;
+        Analytics.trackEvent('method_select', { method: currentMethod, direction: selectedDirection });
         document.querySelectorAll('.method-tab').forEach(t => t.classList.remove('active'));
         tab.classList.add('active');
         document.querySelectorAll('.method-panel').forEach(p => p.classList.remove('active'));
@@ -345,9 +471,7 @@ const App = (() => {
 
     // 再問一卦
     document.getElementById('btn-restart')?.addEventListener('click', () => {
-      coinTosses = [];
-      reading = null;
-      resetCoinUI();
+      resetDecisionFlow();
       goTo('home');
     });
 
@@ -420,7 +544,7 @@ const App = (() => {
 
   // === 演算動畫 ===
   function showAnimation() {
-    Analytics.trackQuestion(selectedDirection, currentMethod);
+    recordCurrentReading();
     goTo('animation');
     const build = document.getElementById('hex-build');
     if (build) build.innerHTML = '';
@@ -462,9 +586,10 @@ const App = (() => {
 
     const h = HEXAGRAMS[reading.originalId];
     const direction = getDirectionMeta(selectedDirection || 'love');
+    const decision = getDecisionCue(reading);
     const quick = selectedDirection === 'yesno' ? getYesNoAnswer(reading) : null;
     const quickText = quick ? `\n快速判斷：${quick.label}｜${quick.headline}` : '';
-    const shareText = `【易經問卦】${h.fn}（${h.n}卦）\n所問方向：${direction.label}${quickText}\n${h.j}\n${h.core || ''}\n\n${url}`;
+    const shareText = `【易｜人生決策輔助器】${h.fn}（${h.n}卦）\n所問方向：${direction.label}\n決策陪伴：${decision.label}${quickText}\n${h.j}\n${h.core || ''}\n\n${url}`;
 
     Analytics.trackShare('link', selectedDirection);
 
@@ -486,8 +611,10 @@ const App = (() => {
     const h = HEXAGRAMS[reading.originalId];
     const sym = hexSymbol(reading.originalId);
     const direction = getDirectionMeta(selectedDirection || 'love');
+    const decision = getDecisionCue(reading);
     const quick = selectedDirection === 'yesno' ? getYesNoAnswer(reading) : null;
     const quickColor = quick ? ({ yes: '#70e0aa', no: '#ff8b96', wait: '#8ad7ff' }[quick.answer]) : '';
+    const decisionColor = ({ courage: '#78dfad', pause: '#ff9aa5', stay: '#8ad7ff' }[decision.key]);
 
     // 建立離屏卡片
     const card = document.createElement('div');
@@ -508,6 +635,11 @@ const App = (() => {
       <div style="display:flex;justify-content:center;margin-bottom:${quick ? '14px' : '24px'}">
         ${renderDirectionChip(direction)}
       </div>
+      <div style="margin-bottom:22px;padding:16px;border:1px solid ${decisionColor}55;border-radius:14px;background:${decisionColor}0d">
+        <div style="font-size:12px;color:rgba(255,255,255,0.45);letter-spacing:.14em;margin-bottom:6px">此刻的決策陪伴</div>
+        <div style="font-size:32px;color:${decisionColor};letter-spacing:.08em">${decision.label}</div>
+        <div style="font-size:14px;color:rgba(255,255,255,0.68);margin-top:5px">${decision.headline}</div>
+      </div>
       ${quick ? `<div style="margin-bottom:22px">
         <div style="font-size:13px;color:rgba(255,255,255,0.45);letter-spacing:.14em;margin-bottom:8px">生活小事・快速判斷</div>
         <div style="font-size:44px;color:${quickColor};line-height:1.1;letter-spacing:.08em;margin-bottom:8px">${quick.label}</div>
@@ -520,7 +652,7 @@ const App = (() => {
         ${h.core || ''}
       </div>
       <div style="margin-top:40px;font-size:13px;color:rgba(255,255,255,0.3);letter-spacing:.1em">
-        易 — 線上問卦 · biology-c.github.io/I-Ching-reading
+        易 — 人生決策輔助器 · biology-c.github.io/I-Ching-reading
       </div>`;
 
     document.body.appendChild(card);
@@ -551,6 +683,201 @@ const App = (() => {
     showToast('圖片已儲存');
   }
 
+  // === 今日一卦、決策卦跡與圖鑑 ===
+  function formatJournalDate(value) {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    return `${date.getMonth() + 1} 月 ${date.getDate()} 日`;
+  }
+
+  function renderHomeJournalStatus() {
+    const container = document.getElementById('home-daily-status');
+    if (!container || typeof YiJournal === 'undefined') return;
+    const summary = YiJournal.getSummary();
+    if (!summary.today) {
+      container.innerHTML = `<span class="home-daily-kicker">今日一卦</span>
+        <span class="home-daily-copy">今天還沒有留下決策卦跡</span>`;
+      return;
+    }
+    const hexagram = HEXAGRAMS[summary.today.originalId];
+    const decision = summary.today.decision?.label || '已記下';
+    container.innerHTML = `<span class="home-daily-kicker">今日一卦已記下</span>
+      <span class="home-daily-copy">${escapeHtml(hexagram?.fn || `${summary.today.originalId} 卦`)} · ${escapeHtml(decision)}</span>`;
+  }
+
+  function openJournal(tab = 'history') {
+    journalTab = tab;
+    renderJournalPage();
+    Analytics.trackEvent('journal_open', { tab });
+    goTo('journal');
+  }
+
+  function renderJournalPage() {
+    const summary = YiJournal.getSummary();
+    const summaryContainer = document.getElementById('journal-summary');
+    const content = document.getElementById('journal-content');
+    if (!summaryContainer || !content) return;
+
+    summaryContainer.innerHTML = `
+      <div class="journal-stat"><strong>${summary.monthDays}</strong><span>本月靜心日</span></div>
+      <div class="journal-stat"><strong>${summary.historyCount}</strong><span>決策卦跡</span></div>
+      <div class="journal-stat"><strong>${summary.unlockedCount}<small>/64</small></strong><span>已遇見卦象</span></div>`;
+
+    document.querySelectorAll('.journal-tab').forEach(tab => {
+      const active = tab.dataset.journalTab === journalTab;
+      tab.classList.toggle('active', active);
+      tab.setAttribute('aria-selected', active ? 'true' : 'false');
+    });
+
+    content.innerHTML = journalTab === 'atlas'
+      ? renderAtlasContent()
+      : renderHistoryContent();
+  }
+
+  function renderHistoryContent() {
+    const entries = YiJournal.list();
+    if (!entries.length) {
+      return `<div class="journal-empty">
+        <div class="journal-empty-mark">易</div>
+        <p>還沒有卦跡。下次卡住時，把那一刻留給未來的自己。</p>
+      </div>`;
+    }
+
+    const today = YiJournal.dateKey();
+    const pendingEchoes = entries.filter(entry => entry.isDailyFirst && entry.dateKey < today && !entry.echo);
+    let html = '';
+    if (pendingEchoes.length) {
+      html += `<section class="echo-section">
+        <div class="journal-section-heading">
+          <span>隔日回聲</span>
+          <small>後來，你怎麼選？</small>
+        </div>
+        ${pendingEchoes.slice(0, 3).map(renderEchoCard).join('')}
+      </section>`;
+    }
+
+    html += `<section class="history-section">
+      <div class="journal-section-heading">
+        <span>走過的猶豫</span>
+        <small>${entries.length} 筆，只存在這個裝置</small>
+      </div>
+      <div class="history-list">${entries.map(renderHistoryCard).join('')}</div>
+    </section>`;
+    return html;
+  }
+
+  function renderEchoCard(entry) {
+    const hexagram = HEXAGRAMS[entry.originalId];
+    const subject = entry.question || hexagram?.fn || `第 ${entry.originalId} 卦`;
+    return `<article class="echo-card">
+      <div class="echo-card-date">${formatJournalDate(entry.createdAt)} · ${escapeHtml(entry.decision?.label || '那一次的選擇')}</div>
+      <div class="echo-card-question">${escapeHtml(subject)}</div>
+      <div class="echo-card-prompt">回頭看，你最後比較接近哪一種選擇？</div>
+      <div class="echo-actions">
+        <button type="button" data-journal-action="echo" data-entry-id="${entry.id}" data-choice="pause">停了一下</button>
+        <button type="button" data-journal-action="echo" data-entry-id="${entry.id}" data-choice="courage">勇敢試了</button>
+        <button type="button" data-journal-action="echo" data-entry-id="${entry.id}" data-choice="stay">維持現狀</button>
+        <button type="button" data-journal-action="echo" data-entry-id="${entry.id}" data-choice="pending">還在觀察</button>
+      </div>
+    </article>`;
+  }
+
+  function renderHistoryCard(entry) {
+    const hexagram = HEXAGRAMS[entry.originalId];
+    const direction = getDirectionMeta(entry.direction);
+    const question = entry.question
+      ? `<div class="history-card-question">${escapeHtml(entry.question)}</div>`
+      : '<div class="history-card-question history-card-question--empty">當時沒有留下問題</div>';
+    const reflection = entry.reflection
+      ? `<div class="history-card-reflection">「${escapeHtml(entry.reflection)}」</div>`
+      : '';
+    const echo = entry.echo
+      ? `<div class="history-card-echo">後來：${escapeHtml(entry.echo.label)}</div>`
+      : '';
+    return `<article class="history-card">
+      <div class="history-card-symbol">${hexSymbol(entry.originalId)}</div>
+      <div class="history-card-body">
+        <div class="history-card-meta">${formatJournalDate(entry.createdAt)} · ${escapeHtml(direction.label)}${entry.isDailyFirst ? ' · 當日第一卦' : ''}</div>
+        <div class="history-card-title">${escapeHtml(hexagram?.fn || `第 ${entry.originalId} 卦`)}</div>
+        <div class="history-card-cue">${escapeHtml(entry.decision?.label || '決策陪伴')}</div>
+        ${question}${reflection}${echo}
+      </div>
+      <div class="history-card-side">
+        ${entry.favorite ? `<span class="history-favorite" aria-label="已收藏">${renderSpriteIcon('heart')}</span>` : ''}
+        <button type="button" class="history-open-btn" data-journal-action="open" data-entry-id="${entry.id}">查看</button>
+      </div>
+    </article>`;
+  }
+
+  function renderAtlasContent() {
+    const atlas = YiJournal.getAtlas();
+    const unlockedCount = atlas.filter(item => item.unlocked).length;
+    return `<section class="atlas-section">
+      <div class="atlas-intro">
+        <div><strong>${unlockedCount}</strong> / 64</div>
+        <p>每天只有第一卦能留下新的卦象。圖鑑不是催你蒐集，而是記下人生曾在哪些地方與你相遇。</p>
+      </div>
+      <div class="atlas-grid">
+        ${atlas.map(item => {
+          const hexagram = HEXAGRAMS[item.id];
+          if (!item.unlocked) {
+            return `<div class="atlas-cell locked" aria-label="第 ${item.id} 卦尚未遇見">
+              <span class="atlas-symbol">·</span><span class="atlas-number">${item.id}</span>
+            </div>`;
+          }
+          return `<button type="button" class="atlas-cell unlocked" data-journal-action="open" data-entry-id="${item.unlocked.readingId}">
+            <span class="atlas-symbol">${hexSymbol(item.id)}</span>
+            <span class="atlas-number">${item.id}</span>
+            <span class="atlas-name">${escapeHtml(hexagram?.n || '')}</span>
+          </button>`;
+        }).join('')}
+      </div>
+    </section>`;
+  }
+
+  function openJournalEntry(id) {
+    const entry = YiJournal.getEntry(id);
+    if (!entry) return;
+    selectedDirection = entry.direction;
+    currentMethod = entry.method;
+    reading = Divination.getReading(entry.lines);
+    currentJournalId = entry.id;
+    currentResultSource = 'history';
+    history.replaceState(null, '', location.pathname);
+    Analytics.trackEvent('history_reading_open', { direction: entry.direction, hexagram_id: entry.originalId });
+    renderResult();
+  }
+
+  function initJournalInteractions() {
+    document.querySelectorAll('.journal-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        journalTab = tab.dataset.journalTab;
+        Analytics.trackEvent(journalTab === 'atlas' ? 'atlas_open' : 'history_open');
+        renderJournalPage();
+      });
+    });
+    document.getElementById('journal-content')?.addEventListener('click', event => {
+      const button = event.target.closest('[data-journal-action]');
+      if (!button) return;
+      const id = button.dataset.entryId;
+      if (button.dataset.journalAction === 'open') {
+        openJournalEntry(id);
+        return;
+      }
+      if (button.dataset.journalAction === 'echo') {
+        const updated = YiJournal.saveEcho(id, button.dataset.choice);
+        if (!updated) return;
+        Analytics.trackEvent('echo_complete', {
+          choice: button.dataset.choice,
+          direction: updated.direction,
+          original_cue: updated.decision?.key || ''
+        });
+        showToast('這一次的選擇，已留在卦跡裡');
+        renderJournalPage();
+      }
+    });
+  }
+
   // === 意見回饋 ===
   function openFeedback() {
     feedbackRating = 0;
@@ -560,9 +887,20 @@ const App = (() => {
     });
     document.getElementById('feedback-text').value = '';
     document.getElementById('feedback-modal').classList.add('show');
+    Analytics.trackEvent('feedback_open', { direction: selectedDirection || '' });
   }
 
   function initFeedbackModal() {
+    const hasEndpoint = !!String(window.YI_CONFIG?.feedbackEndpoint || '').trim();
+    const deliveryNote = document.getElementById('feedback-delivery-note');
+    const submitButton = document.getElementById('btn-feedback-submit');
+    if (deliveryNote) {
+      deliveryNote.textContent = hasEndpoint
+        ? '回饋會直接送達，不會包含你記在卦跡裡的問題或心得。'
+        : '送出後會開啟郵件，請在郵件程式中確認寄出。';
+    }
+    if (submitButton) submitButton.textContent = hasEndpoint ? '送出回饋' : '開啟郵件寄出';
+
     document.querySelectorAll('.star').forEach(star => {
       star.addEventListener('click', () => {
         feedbackRating = parseInt(star.dataset.v);
@@ -585,15 +923,25 @@ const App = (() => {
     });
     document.getElementById('btn-feedback-cancel')?.addEventListener('click', () =>
       document.getElementById('feedback-modal').classList.remove('show'));
-    document.getElementById('btn-feedback-submit')?.addEventListener('click', () => {
+    document.getElementById('btn-feedback-submit')?.addEventListener('click', async () => {
       const feedbackText = document.getElementById('feedback-text').value.trim();
       if (!feedbackRating && !feedbackText) {
         showToast('選個星等，或留一句話再送出也可以。');
         return;
       }
-      Analytics.trackFeedback(feedbackRating, feedbackText);
-      document.getElementById('feedback-modal').classList.remove('show');
-      showToast('感謝你的回饋 🙏');
+      const button = document.getElementById('btn-feedback-submit');
+      button.disabled = true;
+      try {
+        const result = await Analytics.submitFeedback(feedbackRating, feedbackText, {
+          direction: selectedDirection
+        });
+        document.getElementById('feedback-modal').classList.remove('show');
+        showToast(result.delivered ? '回饋已送達，謝謝你' : '已開啟郵件，寄出後我們才會收到');
+      } catch {
+        showToast('暫時無法送出，請稍後再試');
+      } finally {
+        button.disabled = false;
+      }
     });
   }
 
@@ -616,6 +964,8 @@ const App = (() => {
       if (lines.length !== 6 || lines.some(v => ![6,7,8,9].includes(v))) return false;
       selectedDirection = dir;
       reading = Divination.getReading(lines);
+      currentJournalId = null;
+      currentResultSource = 'shared';
       renderResult();
       return true;
     } catch(e) { return false; }
@@ -633,6 +983,8 @@ const App = (() => {
 
     const direction = getDirectionMeta(selectedDirection || 'love');
     const sym = hexSymbol(r.originalId);
+    const decisionCue = getDecisionCue(r);
+    const journalEntry = currentJournalId ? YiJournal.getEntry(currentJournalId) : null;
 
     let html = '';
 
@@ -656,6 +1008,8 @@ const App = (() => {
     </div>`;
 
     html += renderDailyWisdomCard(selectedDirection || 'general', 'daily-wisdom-card--result');
+
+    html += renderDecisionCompanion(decisionCue, journalEntry);
 
     if (selectedDirection === 'yesno') {
       html += renderYesNoCard(r);
@@ -750,17 +1104,19 @@ const App = (() => {
       </div>
     </div>`;
 
+    html += renderReflectionCard(decisionCue, journalEntry);
+
     // 底部操作
     html += `<div class="result-actions">
-      <button class="btn btn--primary" id="btn-restart">再問一卦</button>
+      <button class="btn btn--primary" id="btn-restart">問另一件事</button>
       <button class="btn btn--share" id="btn-share-image">儲存圖片</button>
       <button class="btn btn--share" id="btn-share-link">分享連結</button>
-      <button class="btn btn--ghost" onclick="App.goTo('home')">回到首頁</button>
+      <button class="btn btn--ghost" id="btn-home-from-result">回到首頁</button>
     </div>
     <div class="result-footer-btns">
-      <button class="btn-icon" id="btn-like" title="喜歡這一卦">
+      <button class="btn-icon${journalEntry?.favorite ? ' liked' : ''}" id="btn-like" title="收藏這一卦" aria-pressed="${journalEntry?.favorite ? 'true' : 'false'}">
         <span class="icon-heart">${renderSpriteIcon('heart')}</span>
-        <span class="icon-label">喜歡</span>
+        <span class="icon-label">${journalEntry?.favorite ? '已收藏' : '收藏'}</span>
       </button>
       <button class="btn-icon" id="btn-feedback" title="意見回饋">
         <span class="icon-msg">${renderSpriteIcon('message')}</span>
@@ -772,9 +1128,29 @@ const App = (() => {
 
     // 再問一卦
     document.getElementById('btn-restart')?.addEventListener('click', () => {
-      coinTosses = []; reading = null; resetCoinUI();
-      history.replaceState(null, '', location.pathname);
+      resetDecisionFlow();
       goTo('home');
+    });
+    document.getElementById('btn-home-from-result')?.addEventListener('click', () => {
+      resetDecisionFlow();
+      goTo('home');
+    });
+
+    document.getElementById('btn-save-reflection')?.addEventListener('click', () => {
+      if (!currentJournalId) return;
+      const value = document.getElementById('decision-reflection')?.value || '';
+      const updated = YiJournal.saveReflection(currentJournalId, value);
+      if (!updated) {
+        showToast('這次沒有保存成功，請再試一次');
+        return;
+      }
+      Analytics.trackEvent('reflection_saved', {
+        direction: updated.direction,
+        has_text: !!updated.reflection,
+        text_length: updated.reflection.length,
+        decision_cue: updated.decision?.key || ''
+      });
+      showToast('已留在你的卦跡裡');
     });
 
     // 儲存圖片
@@ -786,18 +1162,46 @@ const App = (() => {
     // 愛心
     document.getElementById('btn-like')?.addEventListener('click', () => {
       const btn = document.getElementById('btn-like');
-      btn.classList.add('liked');
-      btn.disabled = true;
-      Analytics.trackLike(selectedDirection);
-      showToast('已記下你的喜歡');
+      if (!currentJournalId) {
+        btn.classList.add('liked');
+        btn.disabled = true;
+        Analytics.trackFavorite(true, selectedDirection);
+        showToast('這是分享卦，收藏不會寫進你的卦跡');
+        return;
+      }
+      const updated = YiJournal.toggleFavorite(currentJournalId);
+      if (!updated) return;
+      btn.classList.toggle('liked', updated.favorite);
+      btn.setAttribute('aria-pressed', updated.favorite ? 'true' : 'false');
+      btn.querySelector('.icon-label').textContent = updated.favorite ? '已收藏' : '收藏';
+      Analytics.trackFavorite(updated.favorite, selectedDirection);
+      showToast(updated.favorite ? '已收藏到你的卦跡' : '已取消收藏');
     });
 
     // 意見回饋
     document.getElementById('btn-feedback')?.addEventListener('click', () => openFeedback());
 
     goTo('result');
+    Analytics.trackEvent('result_view', {
+      direction: selectedDirection,
+      hexagram_id: r.originalId,
+      has_changed_hexagram: !!r.changedId,
+      decision_cue: decisionCue.key,
+      source: currentResultSource
+    });
+    if (currentResultSource === 'new') {
+      Analytics.trackEvent('reading_result_view', {
+        direction: selectedDirection,
+        hexagram_id: r.originalId,
+        decision_cue: decisionCue.key
+      });
+    }
 
     // 進入結果頁後緩慢下滑再彈回，提示可下滑
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+      document.getElementById('scroll-hint')?.classList.add('hidden');
+      return;
+    }
     setTimeout(() => {
       window.scrollTo({ top: 0, behavior: 'instant' });
       setTimeout(() => {
